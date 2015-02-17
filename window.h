@@ -6,7 +6,10 @@ class BasicApplication : public wxApp {
 
 
 class MyFrame : public wxFrame {    
- protected:
+private:
+    void Convolution(double[][3]);
+
+protected:
     wxMenuBar  *menuBar;//main menu bar
     wxMenu     *fileMenu;//file menu
     wxBitmap *back_bitmap; // offscreen memory buffer for drawing
