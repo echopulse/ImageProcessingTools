@@ -239,7 +239,7 @@ void MyFrame::OnShiftImage(wxCommandEvent & event){
     }
 }
 
-//Convolution
+//ConvolutionMenu
 void MyFrame::OnConvolution(wxCommandEvent & event){
     wxString scaleInput = wxGetTextFromUser (
             wxT("Enter number corresponding to mask:\n 1. Averaging\n 2. Weighted Averaging\n"
@@ -250,8 +250,9 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
             NULL,
             -1, -1, TRUE                
             ); 
-    double selection;
-    scaleInput.ToDouble(&selection);
+    double input;
+    scaleInput.ToDouble(&input);
+    int selection = static_cast<int>(input + 0.5);
     
     if(selection > 9 || selection < 1)
     {
@@ -261,8 +262,17 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
     {
         switch(selection)
         {
+            double mask [3][3];
             case 1 :
-               break;
+                for(int i = 0; i < 3; i++)
+                {
+                    for(int j = 0; j < 3; j++)
+                    {
+                        mask[i][j] = 1.0/9.0;
+                    }
+                }
+                MyFrame::Convolution(mask);
+                break;
             case 2 :
                 break;
             case 3 :
@@ -282,9 +292,82 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
             default :
                 wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
         }
+        cout << "Finished convolution";
         Refresh();
     }
     
+}
+
+//Convolution Function
+void MyFrame::Convolution(double mask[3][3])
+{
+    for (int m=0; m<3; m++)
+    {
+        for(int n=0; n<3; n++)
+        {
+                cout << mask[m][n] << ' ';
+        }
+        cout << '\n';
+    }
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+    
+    for(int i=0;i< imgWidth; i++)
+    {
+        for(int j=0;j<imgHeight;j++)
+        {                 
+            //Compute average
+            double averageRed = 0.0;
+            double averageBlue = 0.0;
+            double averageGreen = 0.0;
+            
+            //RED
+            //row 0
+            averageRed += mask[0][0] * loadedImage->GetRed(i-1,j-1);
+            averageRed += mask[0][1] * loadedImage->GetRed(i,j-1);
+            averageRed += mask[0][2] * loadedImage->GetRed(i+1,j-1);
+            //row 1
+            averageRed += mask[1][0] * loadedImage->GetRed(i-1,j);
+            averageRed += mask[1][1] * loadedImage->GetRed(i,j);
+            averageRed += mask[1][2] * loadedImage->GetRed(i+1,j);
+            //row 2
+            averageRed += mask[2][0] * loadedImage->GetRed(i-1,j+1);
+            averageRed += mask[2][1] * loadedImage->GetRed(i,j+1);
+            averageRed += mask[2][2] * loadedImage->GetRed(i+1,j+1);
+            
+            //BLUE
+            //row 0
+            averageBlue += mask[0][0] * loadedImage->GetBlue(i-1,j-1);
+            averageBlue += mask[0][1] * loadedImage->GetBlue(i,j-1);
+            averageBlue += mask[0][2] * loadedImage->GetBlue(i+1,j-1);
+            //row 1
+            averageBlue += mask[1][0] * loadedImage->GetBlue(i-1,j);
+            averageBlue += mask[1][1] * loadedImage->GetBlue(i,j);
+            averageBlue += mask[1][2] * loadedImage->GetBlue(i+1,j);
+            //row 2
+            averageBlue += mask[2][0] * loadedImage->GetBlue(i-1,j+1);
+            averageBlue += mask[2][1] * loadedImage->GetBlue(i,j+1);
+            averageBlue += mask[2][2] * loadedImage->GetBlue(i+1,j+1);
+            
+            //GREEN
+            //row 0
+            averageGreen += mask[0][0] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[0][1] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[0][2] * loadedImage->GetGreen(i-1,j-1);
+            //row 1
+            averageGreen += mask[1][0] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[1][1] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[1][2] * loadedImage->GetGreen(i-1,j-1);
+            //row 2
+            averageGreen += mask[2][0] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[2][1] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[2][2] * loadedImage->GetGreen(i-1,j-1);
+            
+            //Set output value
+            loadedImage->SetRGB(i,j,averageRed,averageBlue,averageGreen);
+        }
+    }
 }
 
 
