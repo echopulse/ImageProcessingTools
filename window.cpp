@@ -244,7 +244,7 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
     wxString scaleInput = wxGetTextFromUser (
             wxT("Enter number corresponding to mask:\n 1. Averaging\n 2. Weighted Averaging\n"
             "3. 4-neighbour Laplacian\n 4. 8-neighbour Laplacian\n 5. 4-neighbour Laplacian Enhancement\n "
-            "6. 8-neighbour Laplacian Enhancement\n 7. Roberts\n 8. Sobel X\n 9. Sobel Y"),
+            "6. 8-neighbour Laplacian Enhancement\n 7. Roberts X\n 8. Roberts Y\n 9. Sobel X\n 10. Sobel Y"),
             wxT("Prompt"),
             wxT(""),
             NULL,
@@ -254,15 +254,16 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
     scaleInput.ToDouble(&input);
     int selection = static_cast<int>(input + 0.5);
     
-    if(selection > 9 || selection < 1)
+    if(selection > 10 || selection < 1)
     {
         wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
     }
     else
     {
+        double mask [3][3];
         switch(selection)
         {
-            double mask [3][3];
+            //Averaging
             case 1 :
                 for(int i = 0; i < 3; i++)
                 {
@@ -270,24 +271,70 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
                     {
                         mask[i][j] = 1.0/9.0;
                     }
-                }
-                MyFrame::Convolution(mask);
+                }             
                 break;
+            //Weighted Averaging
             case 2 :
+                mask[0][0] = 1.0/16.0; mask[0][1] = 2.0/16.0; mask[0][2] = 1.0/16.0;
+                mask[1][0] = 2.0/16.0; mask[1][1] = 4.0/16.0; mask[1][2] = 2.0/16.0;
+                mask[2][0] = 1.0/16.0; mask[2][1] = 2.0/16.0; mask[2][2] = 1.0/16.0;
+                MyFrame::Convolution(mask, false);
                 break;
+            //4N Laplacian
             case 3 :
-               break;
+                mask[0][0] = 0.0; mask[0][1] = -1.0; mask[0][2] = 0.0;
+                mask[1][0] = -1.0; mask[1][1] = 4.0; mask[1][2] = -1.0;
+                mask[2][0] = 0.0; mask[2][1] = -1.0; mask[2][2] = 0.0;
+                MyFrame::Convolution(mask, false);
+                break;
+            //8N Laplacian
             case 4 :
-               break;
+                mask[0][0] = -1.0; mask[0][1] = -1.0; mask[0][2] = -1.0;
+                mask[1][0] = -1.0; mask[1][1] = 8.0; mask[1][2] = -1.0;
+                mask[2][0] = -1.0; mask[2][1] = -1.0; mask[2][2] = -1.0;
+                MyFrame::Convolution(mask, false);
+                break;
+            //4N Laplacian Enhancement
             case 5 :
+                mask[0][0] = 0.0; mask[0][1] = -1.0; mask[0][2] = 0.0;
+                mask[1][0] = -1.0; mask[1][1] = 5.0; mask[1][2] = -1.0;
+                mask[2][0] = 0.0; mask[2][1] = -1.0; mask[2][2] = 0.0;
+                MyFrame::Convolution(mask, false);
                break;
+            //8N Laplacian Enhancement
             case 6 :
+                mask[0][0] = -1.0; mask[0][1] = -1.0; mask[0][2] = -1.0;
+                mask[1][0] = -1.0; mask[1][1] = 9.0; mask[1][2] = -1.0;
+                mask[2][0] = -1.0; mask[2][1] = -1.0; mask[2][2] = -1.0;
+                MyFrame::Convolution(mask, false);
                 break;
+            //Roberts
             case 7 :
+                mask[0][0] = 0.0; mask[0][1] = 0.0; mask[0][2] = 0.0;
+                mask[1][0] = 0.0; mask[1][1] = 0.0; mask[1][2] = -1.0;
+                mask[2][0] = 0.0; mask[2][1] = 1.0; mask[2][2] = 0.0;
+                MyFrame::Convolution(mask, true);
                 break;
+            //Roberts
             case 8:
+                mask[0][0] = 0.0; mask[0][1] = 0.0; mask[0][2] = 0.0;
+                mask[1][0] = 0.0; mask[1][1] = -1.0; mask[1][2] = 0.0;
+                mask[2][0] = 0.0; mask[2][1] = 0.0; mask[2][2] = 1.0;
+                MyFrame::Convolution(mask, true);
                 break;
+            //Sobel X
             case 9:
+                mask[0][0] = -1.0; mask[0][1] = 0.0; mask[0][2] = 1.0;
+                mask[1][0] = -2.0; mask[1][1] = 0.0; mask[1][2] = 2.0;
+                mask[2][0] = -1.0; mask[2][1] = 0.0; mask[2][2] = 1.0;
+                MyFrame::Convolution(mask, true);
+                break;
+            //Sobel Y
+            case 10:
+                mask[0][0] = -1.0; mask[0][1] = -2.0; mask[0][2] = -1.0;
+                mask[1][0] = 0.0; mask[1][1] = 0.0; mask[1][2] = 0.0;
+                mask[2][0] = 1.0; mask[2][1] = 2.0; mask[2][2] = 1.0;
+                MyFrame::Convolution(mask, true);
                 break;
             default :
                 wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
@@ -299,7 +346,7 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
 }
 
 //Convolution Function
-void MyFrame::Convolution(double mask[3][3])
+void MyFrame::Convolution(double mask[3][3], bool absValConversion)
 {
     for (int m=0; m<3; m++)
     {
@@ -312,6 +359,7 @@ void MyFrame::Convolution(double mask[3][3])
     
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
     
     for(int i=0;i< imgWidth; i++)
     {
@@ -324,48 +372,62 @@ void MyFrame::Convolution(double mask[3][3])
             
             //RED
             //row 0
-            averageRed += mask[0][0] * loadedImage->GetRed(i-1,j-1);
-            averageRed += mask[0][1] * loadedImage->GetRed(i,j-1);
-            averageRed += mask[0][2] * loadedImage->GetRed(i+1,j-1);
+            averageRed += mask[0][0] * tempImage->GetRed(i-1,j-1);
+            averageRed += mask[0][1] * tempImage->GetRed(i,j-1);
+            averageRed += mask[0][2] * tempImage->GetRed(i+1,j-1);
             //row 1
-            averageRed += mask[1][0] * loadedImage->GetRed(i-1,j);
-            averageRed += mask[1][1] * loadedImage->GetRed(i,j);
-            averageRed += mask[1][2] * loadedImage->GetRed(i+1,j);
+            averageRed += mask[1][0] * tempImage->GetRed(i-1,j);
+            averageRed += mask[1][1] * tempImage->GetRed(i,j);
+            averageRed += mask[1][2] * tempImage->GetRed(i+1,j);
             //row 2
-            averageRed += mask[2][0] * loadedImage->GetRed(i-1,j+1);
-            averageRed += mask[2][1] * loadedImage->GetRed(i,j+1);
-            averageRed += mask[2][2] * loadedImage->GetRed(i+1,j+1);
+            averageRed += mask[2][0] * tempImage->GetRed(i-1,j+1);
+            averageRed += mask[2][1] * tempImage->GetRed(i,j+1);
+            averageRed += mask[2][2] * tempImage->GetRed(i+1,j+1);
             
             //BLUE
             //row 0
-            averageBlue += mask[0][0] * loadedImage->GetBlue(i-1,j-1);
-            averageBlue += mask[0][1] * loadedImage->GetBlue(i,j-1);
-            averageBlue += mask[0][2] * loadedImage->GetBlue(i+1,j-1);
+            averageBlue += mask[0][0] * tempImage->GetBlue(i-1,j-1);
+            averageBlue += mask[0][1] * tempImage->GetBlue(i,j-1);
+            averageBlue += mask[0][2] * tempImage->GetBlue(i+1,j-1);
             //row 1
-            averageBlue += mask[1][0] * loadedImage->GetBlue(i-1,j);
-            averageBlue += mask[1][1] * loadedImage->GetBlue(i,j);
-            averageBlue += mask[1][2] * loadedImage->GetBlue(i+1,j);
+            averageBlue += mask[1][0] * tempImage->GetBlue(i-1,j);
+            averageBlue += mask[1][1] * tempImage->GetBlue(i,j);
+            averageBlue += mask[1][2] * tempImage->GetBlue(i+1,j);
             //row 2
-            averageBlue += mask[2][0] * loadedImage->GetBlue(i-1,j+1);
-            averageBlue += mask[2][1] * loadedImage->GetBlue(i,j+1);
-            averageBlue += mask[2][2] * loadedImage->GetBlue(i+1,j+1);
+            averageBlue += mask[2][0] * tempImage->GetBlue(i-1,j+1);
+            averageBlue += mask[2][1] * tempImage->GetBlue(i,j+1);
+            averageBlue += mask[2][2] * tempImage->GetBlue(i+1,j+1);
             
             //GREEN
             //row 0
-            averageGreen += mask[0][0] * loadedImage->GetGreen(i-1,j-1);
-            averageGreen += mask[0][1] * loadedImage->GetGreen(i-1,j-1);
-            averageGreen += mask[0][2] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[0][0] * tempImage->GetGreen(i-1,j-1);
+            averageGreen += mask[0][1] * tempImage->GetGreen(i,j-1);
+            averageGreen += mask[0][2] * tempImage->GetGreen(i+1,j-1);
             //row 1
-            averageGreen += mask[1][0] * loadedImage->GetGreen(i-1,j-1);
-            averageGreen += mask[1][1] * loadedImage->GetGreen(i-1,j-1);
-            averageGreen += mask[1][2] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[1][0] * tempImage->GetGreen(i-1,j);
+            averageGreen += mask[1][1] * tempImage->GetGreen(i,j);
+            averageGreen += mask[1][2] * tempImage->GetGreen(i+1,j);
             //row 2
-            averageGreen += mask[2][0] * loadedImage->GetGreen(i-1,j-1);
-            averageGreen += mask[2][1] * loadedImage->GetGreen(i-1,j-1);
-            averageGreen += mask[2][2] * loadedImage->GetGreen(i-1,j-1);
+            averageGreen += mask[2][0] * tempImage->GetGreen(i-1,j+1);
+            averageGreen += mask[2][1] * tempImage->GetGreen(i,j+1);
+            averageGreen += mask[2][2] * tempImage->GetGreen(i+1,j+1);
+            
+            
+            if(absValConversion)
+            {
+                averageRed = abs(averageRed);
+                averageGreen = abs(averageGreen);
+                averageBlue = abs(averageBlue);
+            }
+            else
+            {
+                averageRed = max(min(averageRed, 255.0), 0.0);
+                averageGreen = max(min(averageGreen, 255.0), 0.0);
+                averageBlue = max(min(averageBlue, 255.0), 0.0);
+            }
             
             //Set output value
-            loadedImage->SetRGB(i,j,averageRed,averageBlue,averageGreen);
+            loadedImage->SetRGB(i,j,averageRed,averageGreen,averageBlue);
         }
     }
 }

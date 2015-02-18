@@ -7,7 +7,7 @@ class BasicApplication : public wxApp {
 
 class MyFrame : public wxFrame {    
 private:
-    void Convolution(double[][3]);
+    void Convolution(double[][3], bool);
 
 protected:
     wxMenuBar  *menuBar;//main menu bar
