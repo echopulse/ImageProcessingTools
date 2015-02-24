@@ -45,6 +45,9 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   fileMenu->Append(SHIFT_IMAGE_ID, _T("&Shift image"));
   fileMenu->Append(CONVOLUTION_ID, _T("&Convolution"));
   fileMenu->Append(SALT_PEPPER_ID, _T("&Add Salt and Pepper"));
+  fileMenu->Append(MIN_FILTER_ID, _T("&Min Filter"));
+  fileMenu->Append(MAX_FILTER_ID, _T("&Max Filter"));
+  fileMenu->Append(MID_POINT_ID, _T("&Midpoint Filter"));
   fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
  
 //###########################################################//
@@ -478,6 +481,253 @@ void MyFrame::AddSaltPepper(wxCommandEvent & event){
     
 }
 
+void MyFrame::MinFilter(wxCommandEvent & event){
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+    wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
+    
+    for(int i=1; i< imgWidth - 1; i++){
+        
+        for(int j=1; j<imgHeight - 1; j++){
+            
+            int minRed = 255;
+            int minBlue = 255;
+            int minGreen = 255;
+             
+            //RED
+            //row 0
+            minRed = min(minRed, (int)tempImage->GetRed(i-1,j-1));
+            minRed = min(minRed, (int)tempImage->GetRed(i,j-1));
+            minRed = min(minRed, (int)tempImage->GetRed(i+1,j-1));
+            //row 1
+            minRed = min(minRed, (int)tempImage->GetRed(i-1,j));
+            minRed = min(minRed, (int)tempImage->GetRed(i,j));
+            minRed = min(minRed, (int)tempImage->GetRed(i+1,j));
+            //row 2
+            minRed = min(minRed, (int)tempImage->GetRed(i-1,j+1));
+            minRed = min(minRed, (int)tempImage->GetRed(i,j+1));
+            minRed = min(minRed, (int)tempImage->GetRed(i+1,j+1));
+            
+            //BLUE
+            //row 0
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i-1,j-1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i,j-1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i+1,j-1));
+            //row 1
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i-1,j));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i,j));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i+1,j));
+            //row 2
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i-1,j+1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i,j+1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i+1,j+1));
+            
+            //GREEN
+            //row 0
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i-1,j-1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i,j-1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i+1,j-1));
+            //row 1
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i-1,j));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i,j));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i+1,j));
+            //row 2
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i-1,j+1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i,j+1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i+1,j+1));
+                       
+            //Set output value
+            loadedImage->SetRGB(i,j,minRed,minGreen,minBlue);
+        }
+    }
+    
+    printf(" Finished Min-filter.\n");
+    Refresh();
+}
+
+void MyFrame::MaxFilter(wxCommandEvent & event){
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+    wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
+    
+    for(int i=1; i< imgWidth - 1; i++){
+        
+        for(int j=1; j<imgHeight - 1; j++){
+            
+            int maxRed = 0;
+            int maxBlue = 0;
+            int maxGreen = 0;
+            
+            //RED
+            //row 0
+            maxRed = max(maxRed, (int)tempImage->GetRed(i-1,j-1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i,j-1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i+1,j-1));
+            //row 1
+            maxRed = max(maxRed, (int)tempImage->GetRed(i-1,j));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i,j));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i+1,j));
+            //row 2
+            maxRed = max(maxRed, (int)tempImage->GetRed(i-1,j+1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i,j+1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i+1,j+1));
+            
+            //BLUE
+            //row 0
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i-1,j-1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i,j-1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i+1,j-1));
+            //row 1
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i-1,j));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i,j));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i+1,j));
+            //row 2
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i-1,j+1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i,j+1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i+1,j+1));
+            
+            //GREEN
+            //row 0
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i-1,j-1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i,j-1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i+1,j-1));
+            //row 1
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i-1,j));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i,j));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i+1,j));
+            //row 2
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i-1,j+1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i,j+1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i+1,j+1));
+                       
+            //Set output value
+            loadedImage->SetRGB(i,j,maxRed,maxGreen,maxBlue);
+        }
+    }
+    
+    printf(" Finished My function.\n");
+    Refresh();
+}
+
+void MyFrame::MidPointFilter(wxCommandEvent & event){
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+    wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
+    
+    for(int i=1; i< imgWidth - 1; i++){
+        
+        for(int j=1; j<imgHeight - 1; j++){
+            
+            int maxRed = 0;
+            int maxBlue = 0;
+            int maxGreen = 0;
+            int minRed = 255;
+            int minBlue = 255;
+            int minGreen = 255;
+             
+    //RED
+        //MAX
+            //row 0
+            maxRed = max(maxRed, (int)tempImage->GetRed(i-1,j-1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i,j-1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i+1,j-1));
+            //row 1
+            maxRed = max(maxRed, (int)tempImage->GetRed(i-1,j));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i,j));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i+1,j));
+            //row 2
+            maxRed = max(maxRed, (int)tempImage->GetRed(i-1,j+1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i,j+1));
+            maxRed = max(maxRed, (int)tempImage->GetRed(i+1,j+1));
+            
+        //MIN
+            //row 0
+            minRed = min(minRed, (int)tempImage->GetRed(i-1,j-1));
+            minRed = min(minRed, (int)tempImage->GetRed(i,j-1));
+            minRed = min(minRed, (int)tempImage->GetRed(i+1,j-1));
+            //row 1
+            minRed = min(minRed, (int)tempImage->GetRed(i-1,j));
+            minRed = min(minRed, (int)tempImage->GetRed(i,j));
+            minRed = min(minRed, (int)tempImage->GetRed(i+1,j));
+            //row 2
+            minRed = min(minRed, (int)tempImage->GetRed(i-1,j+1));
+            minRed = min(minRed, (int)tempImage->GetRed(i,j+1));
+            minRed = min(minRed, (int)tempImage->GetRed(i+1,j+1));
+            
+    //BLUE
+        //MAX
+            //row 0
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i-1,j-1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i,j-1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i+1,j-1));
+            //row 1
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i-1,j));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i,j));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i+1,j));
+            //row 2
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i-1,j+1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i,j+1));
+            maxBlue = max(maxBlue, (int)tempImage->GetBlue(i+1,j+1));
+            
+        //MIN
+            //row 0
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i-1,j-1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i,j-1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i+1,j-1));
+            //row 1
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i-1,j));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i,j));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i+1,j));
+            //row 2
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i-1,j+1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i,j+1));
+            minBlue = min(minBlue, (int)tempImage->GetBlue(i+1,j+1));
+            
+    //GREEN
+        //MAX
+            //row 0
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i-1,j-1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i,j-1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i+1,j-1));
+            //row 1
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i-1,j));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i,j));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i+1,j));
+            //row 2
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i-1,j+1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i,j+1));
+            maxGreen = max(maxGreen, (int)tempImage->GetGreen(i+1,j+1));
+            
+        //MIN
+            //row 0
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i-1,j-1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i,j-1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i+1,j-1));
+            //row 1
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i-1,j));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i,j));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i+1,j));
+            //row 2
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i-1,j+1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i,j+1));
+            minGreen = min(minGreen, (int)tempImage->GetGreen(i+1,j+1));
+                       
+            int midPointRed = (maxRed + minRed)/2;
+            int midPointBlue = (maxBlue + minBlue)/2;
+            int midPointGreen = (maxGreen + minGreen)/2;
+            
+            
+            //Set output value
+            loadedImage->SetRGB(i,j,midPointRed,midPointGreen,midPointBlue);
+        }
+    }
+    
+    printf(" Finished Mid-point filter.\n");
+    Refresh();
+}
 
 //My Function ---> To be modified!
 void MyFrame::OnMyFunctionImage(wxCommandEvent & event){
@@ -588,6 +838,9 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( LOAD_RAW, MyFrame::OpenRawFile)
   EVT_MENU ( CONVOLUTION_ID, MyFrame::OnConvolution)
   EVT_MENU ( SALT_PEPPER_ID, MyFrame::AddSaltPepper)
+  EVT_MENU ( MIN_FILTER_ID, MyFrame::MinFilter)
+  EVT_MENU ( MAX_FILTER_ID, MyFrame::MaxFilter)
+  EVT_MENU ( MID_POINT_ID, MyFrame::MidPointFilter)
   EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
 
 //###########################################################//

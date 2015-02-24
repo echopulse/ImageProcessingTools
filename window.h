@@ -29,6 +29,9 @@ protected:
     void OnSaveImage(wxCommandEvent & event);
     void OpenRawFile(wxCommandEvent & event);
     void AddSaltPepper(wxCommandEvent & event);
+    void MinFilter(wxCommandEvent & event);
+    void MaxFilter(wxCommandEvent & event);
+    void MidPointFilter(wxCommandEvent & event);
     void OnMyFunctionImage(wxCommandEvent & event); //---> To be modified!
     
  public:
@@ -56,5 +59,8 @@ enum { EXIT_ID = wxID_HIGHEST + 1,
        SHIFT_IMAGE_ID,
        SAVE_IMAGE_ID,
        SALT_PEPPER_ID,
+       MIN_FILTER_ID,
+       MAX_FILTER_ID,
+       MID_POINT_ID,
        MY_IMAGE_ID, //--->To be modified!
 };
