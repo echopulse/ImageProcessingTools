@@ -44,6 +44,7 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   fileMenu->Append(SCALE_IMAGE_ID, _T("&Scale image"));
   fileMenu->Append(SHIFT_IMAGE_ID, _T("&Shift image"));
   fileMenu->Append(CONVOLUTION_ID, _T("&Convolution"));
+  fileMenu->Append(SALT_PEPPER_ID, _T("&Add Salt and Pepper"));
   fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
  
 //###########################################################//
@@ -106,7 +107,7 @@ void MyFrame::OnOpenFile(wxCommandEvent & event){
 //###########################################################//
 
 //OPEN RAW FILE
-void MyFrame::openRawFile(wxCommandEvent & event){
+void MyFrame::OpenRawFile(wxCommandEvent & event){
 
     wxFileDialog *openFileDialog = new wxFileDialog ( this, _T("Open file"), _T(""), _T(""), FILETYPES, wxOPEN, wxDefaultPosition);  
     if(openFileDialog->ShowModal() == wxID_OK)
@@ -432,6 +433,51 @@ void MyFrame::Convolution(double mask[3][3], bool absValConversion)
     }
 }
 
+//Add Salt
+void MyFrame::AddSaltPepper(wxCommandEvent & event){
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+    int intensity = 0;
+    
+    wxString scaleInput = wxGetTextFromUser (
+            wxT("Enter number of salt and pepper particles to add:"),
+            wxT("Prompt"),
+            wxT(""),
+            NULL,
+            -1, -1, TRUE                
+            ); 
+    double input;
+    scaleInput.ToDouble(&input);
+    intensity = static_cast<int>(input + 0.5);
+    
+    if(intensity < 1)
+    {
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
+    }
+    else
+    {
+        for(int i=0; i < intensity; i++)
+        {
+            int randomX = rand() % imgWidth;
+            int randomY = rand() % imgHeight;
+            int saltOrPepper = rand() % 100;
+            
+            if(saltOrPepper > 50)
+            {
+               loadedImage->SetRGB(randomX,randomY,255,255,255); 
+            }
+            else
+            {
+                loadedImage->SetRGB(randomX,randomY,0,0,0);
+            }
+        }
+    }
+    printf(" Finished adding salt and pepper.\n");
+    Refresh();
+    
+}
+
 
 //My Function ---> To be modified!
 void MyFrame::OnMyFunctionImage(wxCommandEvent & event){
@@ -539,8 +585,9 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( SHIFT_IMAGE_ID,  MyFrame::OnShiftImage)
   EVT_MENU ( SCALE_IMAGE_ID,  MyFrame::OnScaleImage)
   EVT_MENU ( SAVE_IMAGE_ID,  MyFrame::OnSaveImage)
-  EVT_MENU ( LOAD_RAW, MyFrame::openRawFile)
+  EVT_MENU ( LOAD_RAW, MyFrame::OpenRawFile)
   EVT_MENU ( CONVOLUTION_ID, MyFrame::OnConvolution)
+  EVT_MENU ( SALT_PEPPER_ID, MyFrame::AddSaltPepper)
   EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
 
 //###########################################################//
