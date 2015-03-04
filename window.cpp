@@ -48,6 +48,8 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   fileMenu->Append(MIN_FILTER_ID, _T("&Min Filter"));
   fileMenu->Append(MAX_FILTER_ID, _T("&Max Filter"));
   fileMenu->Append(MID_POINT_ID, _T("&Midpoint Filter"));
+  fileMenu->Append(LOGARITHM_ID, _T("&Logarithm Function"));
+  fileMenu->Append(POWER_ID, _T("&Power Function"));
   fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
  
 //###########################################################//
@@ -671,6 +673,108 @@ void MyFrame::MidPointFilter(wxCommandEvent & event){
     Refresh();
 }
 
+void MyFrame::LogTransformation(wxCommandEvent & event){
+    
+    double constant = 255/log(256);
+    
+    int base = 1;
+    wxString scaleInput = wxGetTextFromUser (
+            wxT("Enter value for logarithm base, 0 for natural log"),
+            wxT("Prompt"),
+            wxT(""),
+            NULL,
+            -1, -1, TRUE                
+            ); 
+    double input;
+    scaleInput.ToDouble(&input);
+    base = static_cast<int>(input + 0.5);
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+    wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+
+   
+    for(int i=0; i< imgWidth; i++){
+
+        for(int j=0; j<imgHeight; j++){
+
+            
+            int inputRed = (int)tempImage->GetRed(i,j);
+            int inputGreen = (int)tempImage->GetGreen(i,j);
+            int inputBlue = (int)tempImage->GetBlue(i,j);
+            
+            int outputRed;
+            int outputGreen;
+            int outputBlue;
+            
+            if(base > 1){
+            
+                outputRed = (int)(constant * ((log(inputRed + 1) / log(base))));
+                outputGreen = (int)(constant * ((log(inputGreen + 1) / log(base))));
+                outputBlue = (int)(constant * ((log(inputBlue + 1) / log(base))));
+            }
+            else {
+                outputRed = (int)(constant * (log(inputRed + 1)));
+                outputGreen = (int)(constant * (log(inputGreen + 1)));
+                outputBlue = (int)(constant * (log(inputBlue + 1)));
+            }
+            
+            //Set output value
+            loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+        }
+    }
+    
+    printf(" Finished Logarithm transformation.\n");
+    Refresh();
+
+}
+
+void MyFrame::PowerTransformation(wxCommandEvent & event){
+    
+    double constant = 1;
+    
+    wxString scaleInput = wxGetTextFromUser (
+            wxT("Enter value for power"),
+            wxT("Prompt"),
+            wxT(""),
+            NULL,
+            -1, -1, TRUE                
+            ); 
+    double power;
+    scaleInput.ToDouble(&power);
+    
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());   
+    //wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+
+   
+    for(int i=0; i< imgWidth; i++){
+
+        for(int j=0; j<imgHeight; j++){
+            
+            int outputRed = constant * pow(loadedImage->GetRed(i,j), power);
+            int outputGreen = constant * pow(loadedImage->GetGreen(i,j), power);
+            int outputBlue = constant * pow(loadedImage->GetBlue(i,j), power);           
+            
+            
+//            int outputRed = max((int)(constant * pow(tempImage->GetRed(i,j), power)),255);
+//            int outputGreen = max((int)(constant * pow(tempImage->GetGreen(i,j), power)),255);
+//            int outputBlue = max((int)(constant * pow(tempImage->GetBlue(i,j), power)),255);
+            
+            //Set output value
+            loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+        }
+    }
+    
+    printf(" Finished Power function.\n");
+    Refresh();
+
+}
+
+
+
+
 //My Function ---> To be modified!
 void MyFrame::OnMyFunctionImage(wxCommandEvent & event){
 
@@ -783,6 +887,8 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( MIN_FILTER_ID, MyFrame::MinFilter)
   EVT_MENU ( MAX_FILTER_ID, MyFrame::MaxFilter)
   EVT_MENU ( MID_POINT_ID, MyFrame::MidPointFilter)
+  EVT_MENU ( LOGARITHM_ID, MyFrame::LogTransformation)
+  EVT_MENU ( POWER_ID, MyFrame::PowerTransformation)        
   EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
 
 //###########################################################//

@@ -32,6 +32,8 @@ protected:
     void MinFilter(wxCommandEvent & event);
     void MaxFilter(wxCommandEvent & event);
     void MidPointFilter(wxCommandEvent & event);
+    void LogTransformation(wxCommandEvent & event);
+    void PowerTransformation(wxCommandEvent & event);
     void OnMyFunctionImage(wxCommandEvent & event); //---> To be modified!
     
  public:
@@ -62,5 +64,7 @@ enum { EXIT_ID = wxID_HIGHEST + 1,
        MIN_FILTER_ID,
        MAX_FILTER_ID,
        MID_POINT_ID,
+       LOGARITHM_ID,
+       POWER_ID,
        MY_IMAGE_ID, //--->To be modified!
 };
