@@ -50,6 +50,7 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   fileMenu->Append(MID_POINT_ID, _T("&Midpoint Filter"));
   fileMenu->Append(LOGARITHM_ID, _T("&Logarithm Function"));
   fileMenu->Append(POWER_ID, _T("&Power Function"));
+  fileMenu->Append(NEGATIVE_ID, _T("&Negative Linear Transform"));
   fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
  
 //###########################################################//
@@ -673,11 +674,25 @@ void MyFrame::MidPointFilter(wxCommandEvent & event){
     Refresh();
 }
 
+void MyFrame::NegativeLinearTransform(wxCommandEvent & event){
+    loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+    
+    for( int i=0;i<imgWidth;i++)
+       for(int j=0;j<imgHeight;j++){
+ 	loadedImage->SetRGB(i,j,255-loadedImage->GetRed(i,j), 
+				255-loadedImage->GetGreen(i,j),
+				255-loadedImage->GetBlue(i,j));
+    }
+    printf(" Finished performing negative linear transformation.\n");
+    Refresh();
+    
+}
+
 void MyFrame::LogTransformation(wxCommandEvent & event){
     
     double constant = 255/log(256);
+    int base = -1;
     
-    int base = 1;
     wxString scaleInput = wxGetTextFromUser (
             wxT("Enter value for logarithm base, 0 for natural log"),
             wxT("Prompt"),
@@ -689,49 +704,53 @@ void MyFrame::LogTransformation(wxCommandEvent & event){
     scaleInput.ToDouble(&input);
     base = static_cast<int>(input + 0.5);
     
-    free(loadedImage);
-    loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
-    wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
-
-   
-    for(int i=0; i< imgWidth; i++){
-
-        for(int j=0; j<imgHeight; j++){
-
-            
-            int inputRed = (int)tempImage->GetRed(i,j);
-            int inputGreen = (int)tempImage->GetGreen(i,j);
-            int inputBlue = (int)tempImage->GetBlue(i,j);
-            
-            int outputRed;
-            int outputGreen;
-            int outputBlue;
-            
-            if(base > 1){
-            
-                outputRed = (int)(constant * ((log(inputRed + 1) / log(base))));
-                outputGreen = (int)(constant * ((log(inputGreen + 1) / log(base))));
-                outputBlue = (int)(constant * ((log(inputBlue + 1) / log(base))));
-            }
-            else {
-                outputRed = (int)(constant * (log(inputRed + 1)));
-                outputGreen = (int)(constant * (log(inputGreen + 1)));
-                outputBlue = (int)(constant * (log(inputBlue + 1)));
-            }
-            
-            //Set output value
-            loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
-        }
-    }
+    if(base >= 0){
     
-    printf(" Finished Logarithm transformation.\n");
-    Refresh();
+        free(loadedImage);
+        loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+        wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+
+
+        for(int i=0; i< imgWidth; i++){
+
+            for(int j=0; j<imgHeight; j++){
+
+
+                int inputRed = (int)tempImage->GetRed(i,j);
+                int inputGreen = (int)tempImage->GetGreen(i,j);
+                int inputBlue = (int)tempImage->GetBlue(i,j);
+
+                int outputRed;
+                int outputGreen;
+                int outputBlue;
+
+                if(base > 1){
+
+                    outputRed = (int)(constant * ((log(inputRed + 1)) / log(base)));
+                    outputGreen = (int)(constant * ((log(inputGreen + 1)) / log(base)));
+                    outputBlue = (int)(constant * ((log(inputBlue + 1)) / log(base)));
+                }
+                else {
+                    outputRed = (int)(constant * (log(inputRed + 1)));
+                    outputGreen = (int)(constant * (log(inputGreen + 1)));
+                    outputBlue = (int)(constant * (log(inputBlue + 1)));
+                }
+
+                //Set output value
+                loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+            }
+        }
+
+        printf(" Finished Logarithm transformation.\n");
+        Refresh();
+    }
 
 }
 
 void MyFrame::PowerTransformation(wxCommandEvent & event){
     
-    double constant = 1;
+    double constant = 255;
+    double power = -1;
     
     wxString scaleInput = wxGetTextFromUser (
             wxT("Enter value for power"),
@@ -740,36 +759,35 @@ void MyFrame::PowerTransformation(wxCommandEvent & event){
             NULL,
             -1, -1, TRUE                
             ); 
-    double power;
     scaleInput.ToDouble(&power);
     
+    if(power > 0){
     
-    free(loadedImage);
-    loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());   
-    //wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+        free(loadedImage);
+        loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());   
+        //wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
 
-   
-    for(int i=0; i< imgWidth; i++){
 
-        for(int j=0; j<imgHeight; j++){
-            
-            int outputRed = constant * pow(loadedImage->GetRed(i,j), power);
-            int outputGreen = constant * pow(loadedImage->GetGreen(i,j), power);
-            int outputBlue = constant * pow(loadedImage->GetBlue(i,j), power);           
-            
-            
-//            int outputRed = max((int)(constant * pow(tempImage->GetRed(i,j), power)),255);
-//            int outputGreen = max((int)(constant * pow(tempImage->GetGreen(i,j), power)),255);
-//            int outputBlue = max((int)(constant * pow(tempImage->GetBlue(i,j), power)),255);
-            
-            //Set output value
-            loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+        for(int i=0; i< imgWidth; i++){
+
+            for(int j=0; j<imgHeight; j++){
+
+                int outputRed = (int)(255 * pow(loadedImage->GetRed(i,j)/(double)255, power));
+                int outputGreen = (int)(255 * pow(loadedImage->GetGreen(i,j)/(double)255, power));
+                int outputBlue = (int)(255 * pow(loadedImage->GetBlue(i,j)/(double)255, power));
+
+                //Set output value
+                loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+            }
         }
-    }
-    
-    printf(" Finished Power function.\n");
-    Refresh();
 
+        printf(" Finished Power function.\n");
+        Refresh();
+    }
+}
+
+void MyFrame::RandomLookupTable(wxCommandEvent & event){
+    
 }
 
 
@@ -888,7 +906,9 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( MAX_FILTER_ID, MyFrame::MaxFilter)
   EVT_MENU ( MID_POINT_ID, MyFrame::MidPointFilter)
   EVT_MENU ( LOGARITHM_ID, MyFrame::LogTransformation)
-  EVT_MENU ( POWER_ID, MyFrame::PowerTransformation)        
+  EVT_MENU ( POWER_ID, MyFrame::PowerTransformation)
+  EVT_MENU ( NEGATIVE_ID, MyFrame::NegativeLinearTransform)
+  EVT_MENU ( RAND_LUT_ID, MyFrame::RandomLookupTable)
   EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
 
 //###########################################################//
