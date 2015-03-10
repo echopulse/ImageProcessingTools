@@ -54,6 +54,8 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   fileMenu->Append(NEGATIVE_ID, _T("&Negative Linear Transform"));
   fileMenu->Append(LUT_ID, _T("&Random Lookup Table"));
   fileMenu->Append(HIST_EQ_ID, _T("&Histogram Equalisation"));
+  fileMenu->Append(HIST_STAT_ID, _T("&Histogram Statistics"));
+  fileMenu->Append(SIMPLE_THRESH_ID, _T("&Simple Thresholding"));
   fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
  
 //###########################################################//
@@ -889,9 +891,125 @@ void MyFrame::HistogramEqualisation(wxCommandEvent & event){
     
     
     printf(" Finished Histogram Equalisation.\n");
-    Refresh();
+    Refresh();   
+}
+
+void MyFrame::HistogramStatistics(wxCommandEvent & event){
+    double histogram[3][256];
+    double sum[3];
+    double mean[3];
+    double variance[3];
     
     
+    //fill histogram with 0s
+    for(int i=0; i<256; i++)
+    {
+        for(int j=0; j<3; j++){
+            histogram[j][i] = 0;
+        }
+    }
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+
+    //fill Histogram
+    for(int i=0; i< imgWidth; i++){
+        for(int j=0; j<imgHeight; j++){
+            histogram[0][(int)loadedImage->GetRed(i,j)]++;
+            histogram[1][(int)loadedImage->GetGreen(i,j)]++;
+            histogram[2][(int)loadedImage->GetBlue(i,j)]++;
+        }
+    }
+    
+    //get sum
+    for(int i =0; i<3;i++){
+        for(int j=0;j<256;j++){
+            sum[i] += histogram[i][j];
+        }
+    }
+    
+    
+    for(int i=0; i < 3; i++){
+        for(int j=0; j<256; j++){
+            mean[i] += ((histogram[i][j] * j)/sum[i]);
+        }
+    }
+    
+    cout << "Mean" << endl;
+    cout << "Red: " << static_cast<int>(mean[0] + 0.5) << endl;
+    cout << "Green: " << static_cast<int>(mean[1] + 0.5) << endl;
+    cout << "Blue: " << static_cast<int>(mean[2] + 0.5) << endl;
+    cout << endl;
+    
+    for(int i=0; i<3;i++){
+        for(int j=0; j<256; j++){
+            //cout << histogram[i][j] << "," << mean[i] << "," << histogram[i][j] - mean[i] << endl;
+            variance[i] += (pow(histogram[i][j] - mean[i], 2)/sum[i]);
+        }
+    }
+    
+    cout << "Standard Deviation" << endl;
+    cout << "Red: " << static_cast<int>(sqrt(variance[0]) + 0.5) << endl;
+    cout << "Green: " << static_cast<int>(sqrt(variance[1]) + 0.5) << endl;
+    cout << "Blue: " << static_cast<int>(sqrt(variance[2]) + 0.5) << endl;
+    
+}
+
+void MyFrame::SimpleThresholding(wxCommandEvent & event){
+    
+    double threshold = -1;
+    
+    wxString scaleInput = wxGetTextFromUser (
+            wxT("Enter threshold"),
+            wxT("Prompt"),
+            wxT(""),
+            NULL,
+            -1, -1, TRUE                
+            ); 
+    scaleInput.ToDouble(&threshold);
+    
+    if(threshold >= 0 && threshold < 256){
+        
+        free(loadedImage);
+        loadedImage = new wxImage(bitmap.ConvertToImage());   
+        //wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+
+        for(int i=0; i< imgWidth; i++){
+            for(int j=0; j<imgHeight; j++){
+                
+                int outputRed = 0;
+                int outputGreen = 0;
+                int outputBlue = 0;
+
+                //applies threshold to each individual band of color
+//                if((int)loadedImage->GetRed(i,j) >= threshold)
+//                    outputRed = loadedImage->GetRed(i,j);
+//                if((int)loadedImage->GetGreen(i,j) >= threshold)
+//                    outputGreen = loadedImage->GetGreen(i,j);
+//                if((int)loadedImage->GetBlue(i,j) >= threshold)
+//                    outputBlue = loadedImage->GetBlue(i,j);
+                
+                //applies threshold on all bands of color
+                if((int)loadedImage->GetRed(i,j) >= threshold ||
+                    (int)loadedImage->GetGreen(i,j) >= threshold ||
+                    (int)loadedImage->GetBlue(i,j) >= threshold)
+                {                    
+                    outputRed = loadedImage->GetRed(i,j);
+                    outputGreen = loadedImage->GetGreen(i,j);
+                    outputBlue = loadedImage->GetBlue(i,j);
+                }
+                
+                //Set output value
+                loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+            }
+        }
+
+        printf(" Finished Simple Threshold.\n");
+        Refresh();
+    }
+    else{
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
+    }
 }
 
 //My Function ---> To be modified!
@@ -1011,6 +1129,8 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( NEGATIVE_ID, MyFrame::NegativeLinearTransform)
   EVT_MENU ( LUT_ID, MyFrame::RandomLookupTable)
   EVT_MENU ( HIST_EQ_ID, MyFrame::HistogramEqualisation)
+  EVT_MENU ( HIST_STAT_ID, MyFrame::HistogramStatistics)
+  EVT_MENU ( SIMPLE_THRESH_ID, MyFrame::SimpleThresholding)
   EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
 
 //###########################################################//

@@ -37,6 +37,8 @@ protected:
     void NegativeLinearTransform(wxCommandEvent & event);
     void RandomLookupTable(wxCommandEvent & event);
     void HistogramEqualisation(wxCommandEvent & event);
+    void HistogramStatistics(wxCommandEvent & event);
+    void SimpleThresholding(wxCommandEvent & event);
     void OnMyFunctionImage(wxCommandEvent & event); //---> To be modified!
     
  public:
@@ -72,5 +74,7 @@ enum { EXIT_ID = wxID_HIGHEST + 1,
        NEGATIVE_ID,
        LUT_ID,
        HIST_EQ_ID,
+       HIST_STAT_ID,
+       SIMPLE_THRESH_ID,
        MY_IMAGE_ID, //--->To be modified!
 };
