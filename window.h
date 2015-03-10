@@ -34,6 +34,9 @@ protected:
     void MidPointFilter(wxCommandEvent & event);
     void LogTransformation(wxCommandEvent & event);
     void PowerTransformation(wxCommandEvent & event);
+    void NegativeLinearTransform(wxCommandEvent & event);
+    void RandomLookupTable(wxCommandEvent & event);
+    void HistogramEqualisation(wxCommandEvent & event);
     void OnMyFunctionImage(wxCommandEvent & event); //---> To be modified!
     
  public:
@@ -66,5 +69,8 @@ enum { EXIT_ID = wxID_HIGHEST + 1,
        MID_POINT_ID,
        LOGARITHM_ID,
        POWER_ID,
+       NEGATIVE_ID,
+       LUT_ID,
+       HIST_EQ_ID,
        MY_IMAGE_ID, //--->To be modified!
 };

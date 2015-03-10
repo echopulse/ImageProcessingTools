@@ -14,6 +14,7 @@
 #include <math.h> 
 #include <wx/textdlg.h>
 #include <wx/msgdlg.h> 
+#include <map>
 
 using namespace std; 
 
@@ -51,6 +52,8 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   fileMenu->Append(LOGARITHM_ID, _T("&Logarithm Function"));
   fileMenu->Append(POWER_ID, _T("&Power Function"));
   fileMenu->Append(NEGATIVE_ID, _T("&Negative Linear Transform"));
+  fileMenu->Append(LUT_ID, _T("&Random Lookup Table"));
+  fileMenu->Append(HIST_EQ_ID, _T("&Histogram Equalisation"));
   fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
  
 //###########################################################//
@@ -788,10 +791,108 @@ void MyFrame::PowerTransformation(wxCommandEvent & event){
 
 void MyFrame::RandomLookupTable(wxCommandEvent & event){
     
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());   
+    
+    map<int, int> lut;
+    for(int i =0; i < 256; i++)
+    {
+        int random = rand() % 255;
+        lut.insert(std::pair<int,int>(i,random));
+    }   
+    for(int i=0; i< imgWidth; i++){
+
+        for(int j=0; j<imgHeight; j++){
+            
+            int outputRed = lut.at((int)loadedImage->GetRed(i,j));
+            int outputGreen = lut.at((int)loadedImage->GetGreen(i,j));
+            int outputBlue = lut.at((int)loadedImage->GetBlue(i,j));
+                       
+            //Set output value
+            loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+        }
+    }
+    printf(" Finished Lookup table conversion.\n");
+    Refresh();
 }
 
+void MyFrame::HistogramEqualisation(wxCommandEvent & event){
+    
+    double histogram[3][256];
+    double cumHist[3][256];
+    int sum[3];
+    int LUT[3][256];
+     
+    //fill histogram with 0s
+    for(int i=0; i<256; i++)
+    {
+        for(int j=0; j<3; j++){
+            histogram[j][i] = 0;
+        }
+    }
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
 
-
+    //fill Histogram
+    for(int i=0; i< imgWidth; i++){
+        for(int j=0; j<imgHeight; j++){
+            histogram[0][(int)loadedImage->GetRed(i,j)]++;
+            histogram[1][(int)loadedImage->GetGreen(i,j)]++;
+            histogram[2][(int)loadedImage->GetBlue(i,j)]++;
+        }
+    }
+    
+    //fill cumulative Histogram
+    cumHist[0][0] = histogram[0][0];
+    cumHist[1][0] = histogram[1][0];
+    cumHist[2][0] = histogram[2][0];
+    
+    for(int i=1; i< 256; i++){
+        for(int j=0; j<3; j++){
+            cumHist[j][i] = histogram[j][i] + cumHist[j][i-1];
+        }
+    }
+    
+    sum[0] = cumHist[0][255];
+    sum[1] = cumHist[1][255];
+    sum[2] = cumHist[2][255];
+    
+    //Histogram Normalisation
+    for(int i=0; i < 256; i++){
+        for(int j=0; j<3; j++){
+            histogram[j][i] = histogram[j][i]/sum[j];
+            cumHist[j][i] = cumHist[j][i]/sum[j];
+        }
+    }
+    
+    //Histogram Equalisation
+    for(int j=0; j<3; j++){
+        for(int i=0; i<256;i++){
+            cumHist[j][i] = cumHist[j][i] * 255;
+            LUT[j][i] = static_cast<int>(cumHist[j][i] + 0.5);
+        }
+    }
+    
+    //Rescale Image   
+    for(int i=0; i< imgWidth; i++){
+        for(int j=0; j<imgHeight; j++){
+          
+            int outputRed = LUT[0][(int)loadedImage->GetRed(i,j)];
+            int outputGreen = LUT[1][(int)loadedImage->GetGreen(i,j)];
+            int outputBlue = LUT[2][(int)loadedImage->GetBlue(i,j)];
+                       
+            //Set output value
+            loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+        }
+    }
+    
+    
+    printf(" Finished Histogram Equalisation.\n");
+    Refresh();
+    
+    
+}
 
 //My Function ---> To be modified!
 void MyFrame::OnMyFunctionImage(wxCommandEvent & event){
@@ -908,7 +1009,8 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( LOGARITHM_ID, MyFrame::LogTransformation)
   EVT_MENU ( POWER_ID, MyFrame::PowerTransformation)
   EVT_MENU ( NEGATIVE_ID, MyFrame::NegativeLinearTransform)
-  EVT_MENU ( RAND_LUT_ID, MyFrame::RandomLookupTable)
+  EVT_MENU ( LUT_ID, MyFrame::RandomLookupTable)
+  EVT_MENU ( HIST_EQ_ID, MyFrame::HistogramEqualisation)
   EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
 
 //###########################################################//
