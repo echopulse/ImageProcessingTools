@@ -941,13 +941,14 @@ void MyFrame::HistogramStatistics(wxCommandEvent & event){
     cout << "Blue: " << static_cast<int>(mean[2] + 0.5) << endl;
     cout << endl;
     
-    for(int i=0; i<3;i++){
-        for(int j=0; j<256; j++){
-            //cout << histogram[i][j] << "," << mean[i] << "," << histogram[i][j] - mean[i] << endl;
-            variance[i] += (pow(histogram[i][j] - mean[i], 2)/sum[i]);
+    for(int i=0; i< imgWidth; i++){
+        for(int j=0; j<imgHeight; j++){
+            variance[0] += (pow((int)loadedImage->GetRed(i,j) - mean[0], 2)/sum[0]);
+            variance[1] += (pow((int)loadedImage->GetGreen(i,j) - mean[1], 2)/sum[1]);
+            variance[2] += (pow((int)loadedImage->GetBlue(i,j) - mean[2], 2)/sum[2]);
         }
     }
-    
+       
     cout << "Standard Deviation" << endl;
     cout << "Red: " << static_cast<int>(sqrt(variance[0]) + 0.5) << endl;
     cout << "Green: " << static_cast<int>(sqrt(variance[1]) + 0.5) << endl;
@@ -989,15 +990,27 @@ void MyFrame::SimpleThresholding(wxCommandEvent & event){
 //                if((int)loadedImage->GetBlue(i,j) >= threshold)
 //                    outputBlue = loadedImage->GetBlue(i,j);
                 
-                //applies threshold on all bands of color
+                //applies threshold on all bands of color, keeps original color
+//                if((int)loadedImage->GetRed(i,j) >= threshold ||
+//                    (int)loadedImage->GetGreen(i,j) >= threshold ||
+//                    (int)loadedImage->GetBlue(i,j) >= threshold)
+//                {                    
+//                    outputRed = loadedImage->GetRed(i,j);
+//                    outputGreen = loadedImage->GetGreen(i,j);
+//                    outputBlue = loadedImage->GetBlue(i,j);
+//                }
+                
+                //applies black or white if below or above threshold
                 if((int)loadedImage->GetRed(i,j) >= threshold ||
                     (int)loadedImage->GetGreen(i,j) >= threshold ||
                     (int)loadedImage->GetBlue(i,j) >= threshold)
                 {                    
-                    outputRed = loadedImage->GetRed(i,j);
-                    outputGreen = loadedImage->GetGreen(i,j);
-                    outputBlue = loadedImage->GetBlue(i,j);
+                    outputRed = 255;
+                    outputGreen = 255;
+                    outputBlue = 255;
                 }
+                
+                
                 
                 //Set output value
                 loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
@@ -1010,6 +1023,10 @@ void MyFrame::SimpleThresholding(wxCommandEvent & event){
     else{
         wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
     }
+}
+
+void MyFrame::AutoThresholding(wxCommandEvent & event){
+    
 }
 
 //My Function ---> To be modified!
