@@ -56,6 +56,7 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   fileMenu->Append(HIST_EQ_ID, _T("&Histogram Equalisation"));
   fileMenu->Append(HIST_STAT_ID, _T("&Histogram Statistics"));
   fileMenu->Append(SIMPLE_THRESH_ID, _T("&Simple Thresholding"));
+  fileMenu->Append(AUTO_THRESH_ID, _T("&Automated Thresholding"));
   fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
  
 //###########################################################//
@@ -178,7 +179,6 @@ void MyFrame::OpenRawFile(wxCommandEvent & event){
 //INVERT IMAGE
 void MyFrame::OnInvertImage(wxCommandEvent & event){
   
-    printf("Inverting...");
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
 
@@ -360,13 +360,14 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
 //Convolution Function
 void MyFrame::Convolution(double mask[3][3], bool absValConversion)
 {
+    cout << endl << "Mask:" << endl;
     for (int m=0; m<3; m++)
     {
         for(int n=0; n<3; n++)
         {
-                cout << mask[m][n] << ' ';
+                cout << mask[m][n] << "\t";
         }
-        cout << '\n';
+        cout << endl;
     }
     
     free(loadedImage);
@@ -377,7 +378,7 @@ void MyFrame::Convolution(double mask[3][3], bool absValConversion)
     {
         for(int j=0;j<imgHeight;j++)
         {                 
-            //Compute average
+            //Computes weighted average using mask values as weights
             double averageRed = 0.0;
             double averageBlue = 0.0;
             double averageGreen = 0.0;
@@ -462,12 +463,7 @@ void MyFrame::AddSaltPepper(wxCommandEvent & event){
     scaleInput.ToDouble(&input);
     intensity = static_cast<int>(input + 0.5);
     
-    if(intensity < 1)
-    {
-        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
-    }
-    else
-    {
+    if(intensity >= 1) {
         for(int i=0; i < intensity; i++)
         {
             int randomX = rand() % imgWidth;
@@ -483,10 +479,12 @@ void MyFrame::AddSaltPepper(wxCommandEvent & event){
                 loadedImage->SetRGB(randomX,randomY,0,0,0);
             }
         }
-    }
-    printf(" Finished adding salt and pepper.\n");
-    Refresh();
-    
+        printf(" Finished Adding Salt & Pepper.\n");
+        Refresh();
+        
+    } else {
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
+    }  
 }
 
 void MyFrame::MinFilter(wxCommandEvent & event){
@@ -543,10 +541,13 @@ void MyFrame::MinFilter(wxCommandEvent & event){
                 loadedImage->SetRGB(i,j,minRed,minGreen,minBlue);
             }
         }
+        
+        printf(" Finished Min Filter function.\n");
+        Refresh();
+        
+    } else {
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
     }
-    
-    printf(" Finished Min Filter function.\n");
-    Refresh();
 }
 
 void MyFrame::MaxFilter(wxCommandEvent & event){
@@ -603,10 +604,13 @@ void MyFrame::MaxFilter(wxCommandEvent & event){
                 loadedImage->SetRGB(i,j,maxRed,maxGreen,maxBlue);
             }
         }
-    }
-    
+        
     printf(" Finished Max Filter function.\n");
     Refresh();
+        
+    }else {
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
+    }
 }
 
 void MyFrame::MidPointFilter(wxCommandEvent & event){
@@ -673,14 +677,19 @@ void MyFrame::MidPointFilter(wxCommandEvent & event){
                 loadedImage->SetRGB(i,j,midPointRed,midPointGreen,midPointBlue);
             }
         }
+        
+        printf(" Finished Mid-point filter.\n");
+        Refresh();
+    } 
+    else {
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
     }
     
-    printf(" Finished Mid-point filter.\n");
-    Refresh();
+    
 }
 
 void MyFrame::NegativeLinearTransform(wxCommandEvent & event){
-    loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+    loadedImage = new wxImage(bitmap.ConvertToImage());
     
     for( int i=0;i<imgWidth;i++)
        for(int j=0;j<imgHeight;j++){
@@ -693,10 +702,10 @@ void MyFrame::NegativeLinearTransform(wxCommandEvent & event){
     
 }
 
+//compresses values of dark pixels and expands values of bright pixels
 void MyFrame::LogTransformation(wxCommandEvent & event){
     
     double constant = 255/log(256);
-    int base = -1;
     
     wxString scaleInput = wxGetTextFromUser (
             wxT("Enter value for logarithm base, 0 for natural log"),
@@ -707,40 +716,56 @@ void MyFrame::LogTransformation(wxCommandEvent & event){
             ); 
     double input;
     scaleInput.ToDouble(&input);
-    base = static_cast<int>(input + 0.5);
+    int base = static_cast<int>(input + 0.5);
     
-    if(base >= 0){
+    if(base > 1 || base == 0){
+        
+        if(base == 0) base = exp(1);
     
         free(loadedImage);
-        loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
-        wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
-
-
+        loadedImage = new wxImage(bitmap.ConvertToImage());
+        wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
+        
+        //initialise min-max for each colour
+        double max[3];
+        double min[3];
+        for(int i=0; i<3;i++)
+        {
+            max[i] = 0.0;
+            min[i] = 255.0;
+        }
+        
+        //get min-max value for each colour
         for(int i=0; i< imgWidth; i++){
-
             for(int j=0; j<imgHeight; j++){
 
+                double r = (double)(constant * ((log(loadedImage->GetRed(i,j) + 1)) / log(base)));
+                double g = (double)(constant * ((log(loadedImage->GetGreen(i,j) + 1)) / log(base)));
+                double b = (double)(constant * ((log(loadedImage->GetBlue(i,j) + 1)) / log(base)));
+                
+                if(r > max[0]) max[0] = r;
+                if(r < min[0]) min[0] = r;
+                
+                if(g > max[1]) max[1] = g;
+                if(g < min[1]) min[1] = g;
+                
+                if(b > max[2]) max[2] = b;
+                if(b < min[2]) min[2] = b;
+            }
+        }
+        
+        //rescale pixels and output.
+        for(int i=0; i< imgWidth; i++){
+            for(int j=0; j<imgHeight; j++){
 
-                int inputRed = (int)tempImage->GetRed(i,j);
-                int inputGreen = (int)tempImage->GetGreen(i,j);
-                int inputBlue = (int)tempImage->GetBlue(i,j);
-
-                int outputRed;
-                int outputGreen;
-                int outputBlue;
-
-                if(base > 1){
-
-                    outputRed = (int)(constant * ((log(inputRed + 1)) / log(base)));
-                    outputGreen = (int)(constant * ((log(inputGreen + 1)) / log(base)));
-                    outputBlue = (int)(constant * ((log(inputBlue + 1)) / log(base)));
-                }
-                else {
-                    outputRed = (int)(constant * (log(inputRed + 1)));
-                    outputGreen = (int)(constant * (log(inputGreen + 1)));
-                    outputBlue = (int)(constant * (log(inputBlue + 1)));
-                }
-
+                double r = (double)(constant * ((log(loadedImage->GetRed(i,j) + 1)) / log(base)));
+                double g = (double)(constant * ((log(loadedImage->GetGreen(i,j) + 1)) / log(base)));
+                double b = (double)(constant * ((log(loadedImage->GetBlue(i,j) + 1)) / log(base)));
+                              
+                double outputRed = Rescale(r, min[0], max[0]);
+                double outputGreen = Rescale(g, min[1], max[1]);
+                double outputBlue = Rescale(b, min[2], max[2]);
+                
                 //Set output value
                 loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
             }
@@ -749,12 +774,16 @@ void MyFrame::LogTransformation(wxCommandEvent & event){
         printf(" Finished Logarithm transformation.\n");
         Refresh();
     }
+    else{
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
+    }
 
 }
 
+//expand values of dark pixels and compress values of bright pixels (for p > 1)
 void MyFrame::PowerTransformation(wxCommandEvent & event){
     
-    double constant = 255;
+    double constant = 8;
     double power = -1;
     
     wxString scaleInput = wxGetTextFromUser (
@@ -769,18 +798,50 @@ void MyFrame::PowerTransformation(wxCommandEvent & event){
     if(power > 0){
     
         free(loadedImage);
-        loadedImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());   
+        loadedImage = new wxImage(bitmap.ConvertToImage());   
         //wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
 
-
+        //initialise min-max for each colour
+        double max[3];
+        double min[3];
+        for(int i=0; i<3;i++)
+        {
+            max[i] = 0.0;
+            min[i] = pow(255, power);
+        }
+        
+        //get min-max value for each colour
         for(int i=0; i< imgWidth; i++){
-
             for(int j=0; j<imgHeight; j++){
 
-                int outputRed = (int)(255 * pow(loadedImage->GetRed(i,j)/(double)255, power));
-                int outputGreen = (int)(255 * pow(loadedImage->GetGreen(i,j)/(double)255, power));
-                int outputBlue = (int)(255 * pow(loadedImage->GetBlue(i,j)/(double)255, power));
+                double r = pow((double)loadedImage->GetRed(i,j), power);
+                double g = pow((double)loadedImage->GetGreen(i,j), power);
+                double b = pow((double)loadedImage->GetBlue(i,j), power);
+                
+                if(r > max[0]) max[0] = r;
+                if(r < min[0]) min[0] = r;
+                
+                if(g > max[1]) max[1] = g;
+                if(g < min[1]) min[1] = g;
+                
+                if(b > max[2]) max[2] = b;
+                if(b < min[2]) min[2] = b;
+            }
+        }
+        
+        //rescale pixels and output.
+        for(int i=0; i< imgWidth; i++){
+            for(int j=0; j<imgHeight; j++){
 
+                double r = pow((double)loadedImage->GetRed(i,j), power);
+                double g = pow((double)loadedImage->GetGreen(i,j), power);
+                double b = pow((double)loadedImage->GetBlue(i,j), power);
+                
+                
+                double outputRed = Rescale(r, min[0], max[0]);
+                double outputGreen = Rescale(g, min[1], max[1]);
+                double outputBlue = Rescale(b, min[2], max[2]);
+                
                 //Set output value
                 loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
             }
@@ -789,6 +850,19 @@ void MyFrame::PowerTransformation(wxCommandEvent & event){
         printf(" Finished Power function.\n");
         Refresh();
     }
+    else{
+        wxMessageBox( wxT("Invalid Input."), wxT("oops!"), wxICON_EXCLAMATION);
+    }
+}
+
+//Rescales pixel value to 8-bit range
+double MyFrame::Rescale(double x, double min, double max){
+    
+    double oldRange = max - min;
+    double newRange = 255 - 0;
+    double newValue = (((x - min) * newRange) / oldRange) + 0;
+    
+    return newValue;
 }
 
 void MyFrame::RandomLookupTable(wxCommandEvent & event){
@@ -818,23 +892,19 @@ void MyFrame::RandomLookupTable(wxCommandEvent & event){
     Refresh();
 }
 
-void MyFrame::HistogramEqualisation(wxCommandEvent & event){
+double** MyFrame::GetHistogram(wxImage* loadedImage){
     
-    double histogram[3][256];
-    double cumHist[3][256];
-    int sum[3];
-    int LUT[3][256];
-     
+    double** histogram = 0;
+    histogram = new double*[3];
+    
     //fill histogram with 0s
-    for(int i=0; i<256; i++)
+    for(int i=0; i<3; i++)
     {
-        for(int j=0; j<3; j++){
-            histogram[j][i] = 0;
+        histogram[i] = new double[256];
+        for(int j=0; j<256; j++){
+            histogram[i][j] = 0;
         }
     }
-    
-    free(loadedImage);
-    loadedImage = new wxImage(bitmap.ConvertToImage());
 
     //fill Histogram
     for(int i=0; i< imgWidth; i++){
@@ -842,6 +912,23 @@ void MyFrame::HistogramEqualisation(wxCommandEvent & event){
             histogram[0][(int)loadedImage->GetRed(i,j)]++;
             histogram[1][(int)loadedImage->GetGreen(i,j)]++;
             histogram[2][(int)loadedImage->GetBlue(i,j)]++;
+        }
+    }
+    
+    return histogram;    
+}
+
+double** MyFrame::GetCumulativeHistogram(double** histogram){
+    
+    double** cumHist = 0;
+    cumHist = new double*[3];
+    
+    //fill histogram with 0s
+    for(int i=0; i<3; i++)
+    {
+        cumHist[i] = new double[256];
+        for(int j=0; j<256; j++){
+            cumHist[i][j] = 0;
         }
     }
     
@@ -856,6 +943,20 @@ void MyFrame::HistogramEqualisation(wxCommandEvent & event){
         }
     }
     
+    return cumHist;  
+}
+
+void MyFrame::HistogramEqualisation(wxCommandEvent & event){
+    
+    int sum[3];
+    int LUT[3][256];
+     
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+    
+    double** histogram = GetHistogram(loadedImage);
+    double** cumHist = GetCumulativeHistogram(histogram);
+        
     sum[0] = cumHist[0][255];
     sum[1] = cumHist[1][255];
     sum[2] = cumHist[2][255];
@@ -895,31 +996,14 @@ void MyFrame::HistogramEqualisation(wxCommandEvent & event){
 }
 
 void MyFrame::HistogramStatistics(wxCommandEvent & event){
-    double histogram[3][256];
     double sum[3];
     double mean[3];
     double variance[3];
     
-    
-    //fill histogram with 0s
-    for(int i=0; i<256; i++)
-    {
-        for(int j=0; j<3; j++){
-            histogram[j][i] = 0;
-        }
-    }
-    
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
 
-    //fill Histogram
-    for(int i=0; i< imgWidth; i++){
-        for(int j=0; j<imgHeight; j++){
-            histogram[0][(int)loadedImage->GetRed(i,j)]++;
-            histogram[1][(int)loadedImage->GetGreen(i,j)]++;
-            histogram[2][(int)loadedImage->GetBlue(i,j)]++;
-        }
-    }
+    double** histogram = GetHistogram(loadedImage);
     
     //get sum
     for(int i =0; i<3;i++){
@@ -928,7 +1012,7 @@ void MyFrame::HistogramStatistics(wxCommandEvent & event){
         }
     }
     
-    
+    //calculate mean
     for(int i=0; i < 3; i++){
         for(int j=0; j<256; j++){
             mean[i] += ((histogram[i][j] * j)/sum[i]);
@@ -941,6 +1025,7 @@ void MyFrame::HistogramStatistics(wxCommandEvent & event){
     cout << "Blue: " << static_cast<int>(mean[2] + 0.5) << endl;
     cout << endl;
     
+    //calculate variance
     for(int i=0; i< imgWidth; i++){
         for(int j=0; j<imgHeight; j++){
             variance[0] += (pow((int)loadedImage->GetRed(i,j) - mean[0], 2)/sum[0]);
@@ -1008,9 +1093,7 @@ void MyFrame::SimpleThresholding(wxCommandEvent & event){
                     outputRed = 255;
                     outputGreen = 255;
                     outputBlue = 255;
-                }
-                
-                
+                }               
                 
                 //Set output value
                 loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
@@ -1027,6 +1110,93 @@ void MyFrame::SimpleThresholding(wxCommandEvent & event){
 
 void MyFrame::AutoThresholding(wxCommandEvent & event){
     
+    double sum[3];
+    double mean[3];
+    
+    free(loadedImage);
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+
+    double** histogram = GetHistogram(loadedImage);
+
+    //get sum
+    for(int i =0; i<3;i++){
+        for(int j=0;j<256;j++){
+            sum[i] += histogram[i][j];
+        }
+    }
+    
+    //calculate histogram mean for each colour
+    for(int i=0; i < 3; i++){
+        for(int j=0; j<256; j++){
+            mean[i] += ((histogram[i][j] * j)/sum[i]);
+        }
+    }
+    
+    double threshold = 0.0;
+    double background;
+    double object;
+    double totBackground;
+    double totObject;
+   
+  
+    while(true){
+        
+        background = 0.0;
+        totBackground = 0.0;
+        
+        for(int i=0; i <= threshold; i++){
+            double avgHistogramValue = (histogram[0][i] + histogram[1][i] + histogram[2][i])/3;
+            totBackground += avgHistogramValue;
+            background += (avgHistogramValue * i);
+        }
+        
+        object = 0.0;
+        totObject = 0.0;
+        for(int i = threshold + 1; i < 256; i++){
+            double avgHistogramValue = (histogram[0][i] + histogram[1][i] + histogram[2][i])/3;
+            totObject += avgHistogramValue;
+            object += (avgHistogramValue * i);
+        }
+        
+        if(totBackground > 0 && totObject > 0){
+            object /= totObject;
+            background /= totBackground;
+            if(threshold == static_cast<int>(((object + background)/2.0) + 0.5)){
+                
+                cout << object << "+" << background << "/2 == " << threshold << endl;
+                break;
+            }
+                
+        }
+        threshold++;
+        if(threshold > 255){
+            cout << "Threshold not found" << endl;
+            break;
+        }
+    }
+    
+    //applying thresholding to image
+    for(int i=0; i< imgWidth; i++){
+        for(int j=0; j<imgHeight; j++){
+
+            int outputRed = 0;
+            int outputGreen = 0;
+            int outputBlue = 0;
+
+            //applies black or white if below or above threshold
+            if((int)loadedImage->GetRed(i,j) >= threshold ||
+                (int)loadedImage->GetGreen(i,j) >= threshold ||
+                (int)loadedImage->GetBlue(i,j) >= threshold)
+            {                    
+                outputRed = 255;
+                outputGreen = 255;
+                outputBlue = 255;
+            }               
+
+            //Set output value
+            loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+        }
+    }
 }
 
 //My Function ---> To be modified!
@@ -1148,6 +1318,7 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( HIST_EQ_ID, MyFrame::HistogramEqualisation)
   EVT_MENU ( HIST_STAT_ID, MyFrame::HistogramStatistics)
   EVT_MENU ( SIMPLE_THRESH_ID, MyFrame::SimpleThresholding)
+  EVT_MENU ( AUTO_THRESH_ID, MyFrame::AutoThresholding)
   EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
 
 //###########################################################//

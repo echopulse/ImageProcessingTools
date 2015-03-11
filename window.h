@@ -8,6 +8,9 @@ class BasicApplication : public wxApp {
 class MyFrame : public wxFrame {    
 private:
     void Convolution(double[][3], bool);
+    double Rescale(double x, double min, double max);
+    double** GetHistogram(wxImage* loadedImage);
+    double** GetCumulativeHistogram(double** mat);
 
 protected:
     wxMenuBar  *menuBar;//main menu bar
