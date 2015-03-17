@@ -21,6 +21,8 @@ protected:
     wxMenu     *pointMenu;
     wxMenu     *histogramMenu;
     
+    wxRect      *selection;
+    
     wxBitmap *back_bitmap; // offscreen memory buffer for drawing
     wxToolBar *toolbar;//toolbar not necessary to use
     int oldWidth, oldHeight; // save old dimensions
@@ -51,6 +53,11 @@ protected:
     void SimpleThresholding(wxCommandEvent & event);
     void AutoThresholding(wxCommandEvent & event);
     void Undo(wxCommandEvent & event);
+    
+    void OnLeftDown(wxMouseEvent & event);
+    void OnLeftUp(wxMouseEvent & event);
+    void OnMotion(wxMouseEvent & event);
+    
     
  public:
     MyFrame(const wxString title, int xpos, int ypos, int width, int height);

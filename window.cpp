@@ -39,6 +39,7 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
   filterMenu = new wxMenu;
   pointMenu = new wxMenu;
   histogramMenu = new wxMenu;
+  selection = new wxRect;
   
   fileMenu->Append(LOAD_FILE_ID, _T("&Open file"));
   fileMenu->Append(LOAD_RAW, _T("&Open Raw File"));  
@@ -205,12 +206,25 @@ void MyFrame::OnInvertImage(wxCommandEvent & event){
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
     undoImage = new wxImage(bitmap.ConvertToImage());
+    
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+    
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
 
-    for( int i=0;i<imgWidth;i++)
-       for(int j=0;j<imgHeight;j++){
- 	loadedImage->SetRGB(i,j,255-loadedImage->GetRed(i,j), 
-				255-loadedImage->GetGreen(i,j),
-				255-loadedImage->GetBlue(i,j));
+    for(int i = x;i<width;i++){
+       for(int j = y;j<height;j++){
+        loadedImage->SetRGB(i,j,255-loadedImage->GetRed(i,j), 
+                                255-loadedImage->GetGreen(i,j),
+                                255-loadedImage->GetBlue(i,j));
+       }
     }
 
     printf(" Finished inverting.\n");
@@ -1312,6 +1326,35 @@ void MyFrame::Undo(wxCommandEvent & event){
     
 }
 
+void MyFrame::OnLeftDown(wxMouseEvent& event){
+    //wxRect imageRect = GetImageDisplayRect(GetScrollPosition());
+    CaptureMouse();
+    Refresh();
+    selection = new wxRect(event.GetPosition(), wxSize(0,0));
+}
+
+void MyFrame::OnLeftUp(wxMouseEvent& event){
+    
+    if(HasCapture()){
+        
+        ReleaseMouse();
+        Refresh();
+        selection->SetBottomRight(event.GetPosition());
+        
+        //in case of single click
+        if(selection->GetHeight() == 1 && selection->GetWidth() == 1){
+            selection->SetSize(wxSize(0,0));
+        }
+    }
+}
+
+void MyFrame::OnMotion(wxMouseEvent& event){
+    if(HasCapture()){
+        selection->SetBottomRight(event.GetPosition());
+        Refresh();
+    }
+}
+
 
 //###########################################################//
 //-----------------------------------------------------------//
@@ -1372,6 +1415,12 @@ imgHeight = (bitmap.ConvertToImage()).GetHeight();
 
 
  temp_dc->SelectObject(bitmap);//given bitmap 
+ 
+ if(selection != NULL && !selection->IsEmpty() && HasCapture()){
+    temp_dc->SetBrush(*wxTRANSPARENT_BRUSH);
+    temp_dc->SetPen(wxPen(*wxWHITE, 3));
+    temp_dc->DrawRectangle(*selection);
+ } 
 
   //end draw all the things
   // Copy from this DC to another DC.
@@ -1406,6 +1455,10 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( SIMPLE_THRESH_ID, MyFrame::SimpleThresholding)
   EVT_MENU ( AUTO_THRESH_ID, MyFrame::AutoThresholding)
   EVT_MENU ( UNDO_ID, MyFrame::Undo)
+        
+  EVT_LEFT_DOWN( MyFrame::OnLeftDown )
+  EVT_LEFT_UP ( MyFrame::OnLeftUp )
+  EVT_MOTION (MyFrame::OnMotion)
 
 //###########################################################//
 //----------------------END MY EVENTS -----------------------//
