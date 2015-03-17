@@ -1138,18 +1138,20 @@ void MyFrame::AutoThresholding(wxCommandEvent & event){
     double totBackground;
     double totObject;
    
-  
+    //divides histogram into background or object based on if the average intensity value is above or below the threshold
+    //threshold increases until the (mean background value  + mean object value) / 2 == threshold
     while(true){
-        
+   
+        //Background
         background = 0.0;
         totBackground = 0.0;
-        
         for(int i=0; i <= threshold; i++){
             double avgHistogramValue = (histogram[0][i] + histogram[1][i] + histogram[2][i])/3;
             totBackground += avgHistogramValue;
             background += (avgHistogramValue * i);
         }
         
+        //Object
         object = 0.0;
         totObject = 0.0;
         for(int i = threshold + 1; i < 256; i++){
@@ -1158,22 +1160,27 @@ void MyFrame::AutoThresholding(wxCommandEvent & event){
             object += (avgHistogramValue * i);
         }
         
+        //finds weighted average object and background gray values and checks if their mean is equal to the threshold.
         if(totBackground > 0 && totObject > 0){
             object /= totObject;
             background /= totBackground;
             if(threshold == static_cast<int>(((object + background)/2.0) + 0.5)){
                 
-                cout << object << "+" << background << "/2 == " << threshold << endl;
+                cout << "object mean gray value: " << object << endl;
+                cout << "background mean gray value: " << background << endl;
                 break;
             }
                 
         }
         threshold++;
+        
         if(threshold > 255){
             cout << "Threshold not found" << endl;
             break;
         }
     }
+    
+    cout << "threshold: " << threshold << endl;
     
     //applying thresholding to image
     for(int i=0; i< imgWidth; i++){
@@ -1197,6 +1204,9 @@ void MyFrame::AutoThresholding(wxCommandEvent & event){
             loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
         }
     }
+    
+    cout << "Automated Thresholding complete!" << endl;
+    Refresh();
 }
 
 //My Function ---> To be modified!
