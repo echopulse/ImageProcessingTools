@@ -34,31 +34,40 @@ bool BasicApplication::OnInit()
 MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height): wxFrame((wxFrame *) NULL, -1, title, wxPoint(xpos, ypos), wxSize(width, height)){
 
   fileMenu = new wxMenu;
+  editMenu = new wxMenu;
+  scaleMenu = new wxMenu;
+  filterMenu = new wxMenu;
+  pointMenu = new wxMenu;
+  histogramMenu = new wxMenu;
+  
   fileMenu->Append(LOAD_FILE_ID, _T("&Open file"));
   fileMenu->Append(LOAD_RAW, _T("&Open Raw File"));  
-  fileMenu->AppendSeparator();
 //###########################################################//
 //----------------------START MY MENU -----------------------//
 //###########################################################// 
   
-  fileMenu->Append(INVERT_IMAGE_ID, _T("&Invert image"));
-  fileMenu->Append(SCALE_IMAGE_ID, _T("&Scale image"));
-  fileMenu->Append(SHIFT_IMAGE_ID, _T("&Shift image"));
-  fileMenu->Append(CONVOLUTION_ID, _T("&Convolution"));
-  fileMenu->Append(SALT_PEPPER_ID, _T("&Add Salt and Pepper"));
-  fileMenu->Append(MIN_FILTER_ID, _T("&Min Filter"));
-  fileMenu->Append(MAX_FILTER_ID, _T("&Max Filter"));
-  fileMenu->Append(MID_POINT_ID, _T("&Midpoint Filter"));
-  fileMenu->Append(LOGARITHM_ID, _T("&Logarithm Function"));
-  fileMenu->Append(POWER_ID, _T("&Power Function"));
-  fileMenu->Append(NEGATIVE_ID, _T("&Negative Linear Transform"));
-  fileMenu->Append(LUT_ID, _T("&Random Lookup Table"));
-  fileMenu->Append(HIST_EQ_ID, _T("&Histogram Equalisation"));
-  fileMenu->Append(HIST_STAT_ID, _T("&Histogram Statistics"));
-  fileMenu->Append(SIMPLE_THRESH_ID, _T("&Simple Thresholding"));
-  fileMenu->Append(AUTO_THRESH_ID, _T("&Automated Thresholding"));
-  fileMenu->Append(MY_IMAGE_ID, _T("&My function")); //--->To be modified!
- 
+  editMenu->Append(UNDO_ID, _T("&Undo"));
+  
+  scaleMenu->Append(INVERT_IMAGE_ID, _T("&Invert image"));
+  scaleMenu->Append(SCALE_IMAGE_ID, _T("&Scale image"));
+  scaleMenu->Append(SHIFT_IMAGE_ID, _T("&Shift image"));
+  
+  filterMenu->Append(CONVOLUTION_ID, _T("&Convolution"));
+  filterMenu->Append(SALT_PEPPER_ID, _T("&Add Salt and Pepper"));
+  filterMenu->Append(MIN_FILTER_ID, _T("&Min Filter"));
+  filterMenu->Append(MAX_FILTER_ID, _T("&Max Filter"));
+  filterMenu->Append(MID_POINT_ID, _T("&Midpoint Filter"));
+  
+  pointMenu->Append(LOGARITHM_ID, _T("&Logarithm Function"));
+  pointMenu->Append(POWER_ID, _T("&Power Function"));
+  pointMenu->Append(NEGATIVE_ID, _T("&Negative Linear Transform"));
+  
+  histogramMenu->Append(LUT_ID, _T("&Random Lookup Table"));
+  histogramMenu->Append(HIST_EQ_ID, _T("&Histogram Equalisation"));
+  histogramMenu->Append(HIST_STAT_ID, _T("&Histogram Statistics"));
+  histogramMenu->Append(SIMPLE_THRESH_ID, _T("&Simple Thresholding"));
+  histogramMenu->Append(AUTO_THRESH_ID, _T("&Automated Thresholding"));
+  
 //###########################################################//
 //----------------------END MY MENU -------------------------//
 //###########################################################// 
@@ -69,12 +78,18 @@ MyFrame::MyFrame(const wxString title, int xpos, int ypos, int width, int height
 
   menuBar = new wxMenuBar;
   menuBar->Append(fileMenu, _T("&File"));
+  menuBar->Append(editMenu, _T("&Edit"));
+  menuBar->Append(scaleMenu, _T("&Scaling and Shifting"));
+  menuBar->Append(filterMenu, _T("&Filters and Masks"));
+  menuBar->Append(pointMenu, _T("&Point Functions"));
+  menuBar->Append(histogramMenu, _T("&Histograms"));
   
   SetMenuBar(menuBar);
   CreateStatusBar(3); 
   oldWidth = 0;
   oldHeight = 0;
   loadedImage = 0;
+  undoImage = 0;
 
 /* initialise the variables that we added */
   imgWidth = imgHeight = 0;
@@ -87,6 +102,8 @@ MyFrame::~MyFrame(){
   if(loadedImage){
     loadedImage->Destroy();
     loadedImage = 0;
+    undoImage->Destroy();
+    undoImage = 0;
   }
 
 }
@@ -98,6 +115,7 @@ void MyFrame::OnOpenFile(wxCommandEvent & event){
     wxString path = openFileDialog->GetPath();
     printf("Loading image from file...");    
     loadedImage = new wxImage(path); //Image Loaded form file 
+    undoImage = new wxImage(path);
     if(loadedImage->Ok()){
       stuffToDraw = ORIGINAL_IMG;    // set the display flag
       printf("Done! \n");    
@@ -105,7 +123,9 @@ void MyFrame::OnOpenFile(wxCommandEvent & event){
     else {
       printf("error:...");
       loadedImage->Destroy();
+      undoImage->Destroy();
       loadedImage = 0;
+      undoImage = 0;
     }
     Refresh();
   }    
@@ -159,6 +179,7 @@ void MyFrame::OpenRawFile(wxCommandEvent & event){
         free (buffer);
 
         loadedImage = new wxImage(dimension, dimension, nbuff, false);
+        undoImage = new wxImage(dimension, dimension, nbuff, false);
         if(loadedImage->Ok())
         {
           stuffToDraw = ORIGINAL_IMG;    // set the display flag
@@ -169,6 +190,8 @@ void MyFrame::OpenRawFile(wxCommandEvent & event){
           printf("error:...");
           loadedImage->Destroy();
           loadedImage = 0;
+          undoImage->Destroy();
+          undoImage = 0;
         }
         
         Refresh();
@@ -181,6 +204,7 @@ void MyFrame::OnInvertImage(wxCommandEvent & event){
   
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
 
     for( int i=0;i<imgWidth;i++)
        for(int j=0;j<imgHeight;j++){
@@ -196,16 +220,64 @@ void MyFrame::OnInvertImage(wxCommandEvent & event){
 //IMAGE SCALING
 void MyFrame::OnScaleImage(wxCommandEvent & event){
 
-    printf("Scaling...");
+    wxString scaleInput = wxGetTextFromUser (
+            wxT("Enter a scaling factor"),
+            wxT("Prompt"),
+            wxT(""),
+            NULL,
+            -1, -1, TRUE                
+            ); 
+    double scale;
+    scaleInput.ToDouble(&scale);    
+    
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
-
-    for( int i=0;i<imgWidth;i++)
-       for(int j=0;j<imgHeight;j++){
- 	loadedImage->SetRGB(i,j,2.5* loadedImage->GetRed(i,j), 
-				2.5* loadedImage->GetGreen(i,j),
-				2.5* loadedImage->GetBlue(i,j));
+    undoImage = new wxImage(bitmap.ConvertToImage());
+    
+    //initialise min-max for each colour
+    double max[3];
+    double min[3];
+    for(int i=0; i<3;i++)
+    {
+        max[i] = 0.0;
+        min[i] = 255.0;
     }
+
+    //get min-max value for each colour
+        for(int i=0; i< imgWidth; i++){
+            for(int j=0; j<imgHeight; j++){
+
+                double r = (double)(scale * loadedImage->GetRed(i,j));
+                double g = (double)(scale * loadedImage->GetGreen(i,j));
+                double b = (double)(scale * loadedImage->GetBlue(i,j));
+                
+                if(r > max[0]) max[0] = r;
+                if(r < min[0]) min[0] = r;
+                
+                if(g > max[1]) max[1] = g;
+                if(g < min[1]) min[1] = g;
+                
+                if(b > max[2]) max[2] = b;
+                if(b < min[2]) min[2] = b;
+            }
+        }
+        
+        //rescale pixels and output.
+        for(int i=0; i< imgWidth; i++){
+            for(int j=0; j<imgHeight; j++){
+
+                double r = (double)(scale * loadedImage->GetRed(i,j));
+                double g = (double)(scale * loadedImage->GetGreen(i,j));
+                double b = (double)(scale * loadedImage->GetBlue(i,j));
+                              
+                double outputRed = Rescale(r, min[0], max[0]);
+                double outputGreen = Rescale(g, min[1], max[1]);
+                double outputBlue = Rescale(b, min[2], max[2]);
+                
+                //Set output value
+                loadedImage->SetRGB(i,j,outputRed,outputGreen,outputBlue);
+            }
+        }
 	
     printf(" Finished scaling.\n");
     Refresh();
@@ -229,6 +301,7 @@ void MyFrame::OnShiftImage(wxCommandEvent & event){
         cout << "Shifting by " << string(scaleInput.mb_str()) << "...\n" << endl; 
         free(loadedImage);
         loadedImage = new wxImage(bitmap.ConvertToImage());
+        undoImage = new wxImage(bitmap.ConvertToImage());
 
         for( int i=0;i<imgWidth;i++)
            for(int j=0;j<imgHeight;j++){
@@ -254,9 +327,17 @@ void MyFrame::OnShiftImage(wxCommandEvent & event){
 //ConvolutionMenu
 void MyFrame::OnConvolution(wxCommandEvent & event){
     wxString scaleInput = wxGetTextFromUser (
-            wxT("Enter number corresponding to mask:\n 1. Averaging\n 2. Weighted Averaging\n"
-            "3. 4-neighbour Laplacian\n 4. 8-neighbour Laplacian\n 5. 4-neighbour Laplacian Enhancement\n "
-            "6. 8-neighbour Laplacian Enhancement\n 7. Roberts X\n 8. Roberts Y\n 9. Sobel X\n 10. Sobel Y"),
+            wxT("Enter number corresponding to mask:"
+            "\n 1. Averaging"
+            "\n 2. Weighted "
+            "\n 3. 4-neighbour Laplacian"
+            "\n 4. 8-neighbour Laplacian"
+            "\n 5. 4-neighbour Laplacian Enhancement"
+            "\n 6. 8-neighbour Laplacian Enhancement"
+            "\n 7. Roberts X"
+            "\n 8. Roberts Y"
+            "\n 9. Sobel X"
+            "\n 10. Sobel Y"),
             wxT("Prompt"),
             wxT(""),
             NULL,
@@ -283,7 +364,8 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
                     {
                         mask[i][j] = 1.0/9.0;
                     }
-                }             
+                }
+                MyFrame::Convolution(mask, false);
                 break;
             //Weighted Averaging
             case 2 :
@@ -372,6 +454,7 @@ void MyFrame::Convolution(double mask[3][3], bool absValConversion)
     
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
     wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
     
     for(int i=0;i< imgWidth; i++)
@@ -450,6 +533,7 @@ void MyFrame::AddSaltPepper(wxCommandEvent & event){
     
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
     int intensity = 0;
     
     wxString scaleInput = wxGetTextFromUser (
@@ -506,6 +590,7 @@ void MyFrame::MinFilter(wxCommandEvent & event){
     
         free(loadedImage);
         loadedImage = new wxImage(bitmap.ConvertToImage());
+        undoImage = new wxImage(bitmap.ConvertToImage());
         wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
 
         for(int i=1; i< imgWidth - 1; i++){
@@ -569,6 +654,7 @@ void MyFrame::MaxFilter(wxCommandEvent & event){
     
         free(loadedImage);
         loadedImage = new wxImage(bitmap.ConvertToImage());
+        undoImage = new wxImage(bitmap.ConvertToImage());
         wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
 
         for(int i=1; i< imgWidth - 1; i++){
@@ -632,6 +718,7 @@ void MyFrame::MidPointFilter(wxCommandEvent & event){
 
         free(loadedImage);
         loadedImage = new wxImage(bitmap.ConvertToImage());
+        undoImage = new wxImage(bitmap.ConvertToImage());
         wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
 
         for(int i=1; i< imgWidth - 1; i++){
@@ -690,6 +777,7 @@ void MyFrame::MidPointFilter(wxCommandEvent & event){
 
 void MyFrame::NegativeLinearTransform(wxCommandEvent & event){
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
     
     for( int i=0;i<imgWidth;i++)
        for(int j=0;j<imgHeight;j++){
@@ -724,6 +812,7 @@ void MyFrame::LogTransformation(wxCommandEvent & event){
     
         free(loadedImage);
         loadedImage = new wxImage(bitmap.ConvertToImage());
+        undoImage = new wxImage(bitmap.ConvertToImage());
         wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
         
         //initialise min-max for each colour
@@ -798,8 +887,8 @@ void MyFrame::PowerTransformation(wxCommandEvent & event){
     if(power > 0){
     
         free(loadedImage);
-        loadedImage = new wxImage(bitmap.ConvertToImage());   
-        //wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+        loadedImage = new wxImage(bitmap.ConvertToImage());
+        undoImage = new wxImage(bitmap.ConvertToImage());
 
         //initialise min-max for each colour
         double max[3];
@@ -868,7 +957,8 @@ double MyFrame::Rescale(double x, double min, double max){
 void MyFrame::RandomLookupTable(wxCommandEvent & event){
     
     free(loadedImage);
-    loadedImage = new wxImage(bitmap.ConvertToImage());   
+    loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
     
     map<int, int> lut;
     for(int i =0; i < 256; i++)
@@ -953,6 +1043,7 @@ void MyFrame::HistogramEqualisation(wxCommandEvent & event){
      
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
     
     double** histogram = GetHistogram(loadedImage);
     double** cumHist = GetCumulativeHistogram(histogram);
@@ -1002,6 +1093,7 @@ void MyFrame::HistogramStatistics(wxCommandEvent & event){
     
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
 
     double** histogram = GetHistogram(loadedImage);
     
@@ -1057,8 +1149,8 @@ void MyFrame::SimpleThresholding(wxCommandEvent & event){
     if(threshold >= 0 && threshold < 256){
         
         free(loadedImage);
-        loadedImage = new wxImage(bitmap.ConvertToImage());   
-        //wxImage *tempImage = new wxImage(bitmap.ConvertToImage().ConvertToGreyscale());
+        loadedImage = new wxImage(bitmap.ConvertToImage());
+        undoImage = new wxImage(bitmap.ConvertToImage());
 
         for(int i=0; i< imgWidth; i++){
             for(int j=0; j<imgHeight; j++){
@@ -1115,6 +1207,7 @@ void MyFrame::AutoThresholding(wxCommandEvent & event){
     
     free(loadedImage);
     loadedImage = new wxImage(bitmap.ConvertToImage());
+    undoImage = new wxImage(bitmap.ConvertToImage());
 
     double** histogram = GetHistogram(loadedImage);
 
@@ -1209,32 +1302,15 @@ void MyFrame::AutoThresholding(wxCommandEvent & event){
     Refresh();
 }
 
-//My Function ---> To be modified!
-void MyFrame::OnMyFunctionImage(wxCommandEvent & event){
-
-    printf("My function...");
-    free(loadedImage);
-    loadedImage = new wxImage(bitmap.ConvertToImage());
-
-    unsigned char r,g,b;
-
-    for( int i=0;i<imgWidth;i++)
-       for(int j=0;j<imgHeight;j++){
-	// GET THE RGB VALUES 	
-        r = loadedImage->GetRed(i,j);   // red pixel value
-        g = loadedImage->GetGreen(i,j); // green pixel value
-	b = loadedImage->GetBlue(i,j); // blue pixel value
-
-	printf("(%d,%d) [r = %x  | g = %x | b = %x] \n",i,j,r,g,b);        
+void MyFrame::Undo(wxCommandEvent & event){
+    
+    if(undoImage != 0 && undoImage != loadedImage){
         
-	// SAVE THE RGB VALUES
-	loadedImage->SetRGB(i,j,r,g,b); 
+        loadedImage = undoImage;
+        Refresh();
     }
-	
-    printf(" Finished My function.\n");
-    Refresh();
+    
 }
-
 
 
 //###########################################################//
@@ -1329,7 +1405,7 @@ BEGIN_EVENT_TABLE (MyFrame, wxFrame)
   EVT_MENU ( HIST_STAT_ID, MyFrame::HistogramStatistics)
   EVT_MENU ( SIMPLE_THRESH_ID, MyFrame::SimpleThresholding)
   EVT_MENU ( AUTO_THRESH_ID, MyFrame::AutoThresholding)
-  EVT_MENU ( MY_IMAGE_ID,  MyFrame::OnMyFunctionImage)//--->To be modified!
+  EVT_MENU ( UNDO_ID, MyFrame::Undo)
 
 //###########################################################//
 //----------------------END MY EVENTS -----------------------//

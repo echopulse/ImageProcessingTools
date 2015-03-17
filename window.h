@@ -15,12 +15,19 @@ private:
 protected:
     wxMenuBar  *menuBar;//main menu bar
     wxMenu     *fileMenu;//file menu
+    wxMenu     *editMenu;
+    wxMenu     *scaleMenu;
+    wxMenu     *filterMenu;
+    wxMenu     *pointMenu;
+    wxMenu     *histogramMenu;
+    
     wxBitmap *back_bitmap; // offscreen memory buffer for drawing
     wxToolBar *toolbar;//toolbar not necessary to use
     int oldWidth, oldHeight; // save old dimensions
 
     wxBitmap bitmap;  //structure for the edited image
     wxImage *loadedImage; // image loaded from file
+    wxImage *undoImage;
     int imgWidth, imgHeight; // image dimensions
     int stuffToDraw; 
 
@@ -43,7 +50,7 @@ protected:
     void HistogramStatistics(wxCommandEvent & event);
     void SimpleThresholding(wxCommandEvent & event);
     void AutoThresholding(wxCommandEvent & event);
-    void OnMyFunctionImage(wxCommandEvent & event); //---> To be modified!
+    void Undo(wxCommandEvent & event);
     
  public:
     MyFrame(const wxString title, int xpos, int ypos, int width, int height);
@@ -81,5 +88,5 @@ enum { EXIT_ID = wxID_HIGHEST + 1,
        HIST_STAT_ID,
        SIMPLE_THRESH_ID,
        AUTO_THRESH_ID,
-       MY_IMAGE_ID, //--->To be modified!
+       UNDO_ID,
 };
