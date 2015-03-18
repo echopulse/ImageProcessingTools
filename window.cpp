@@ -256,10 +256,22 @@ void MyFrame::OnScaleImage(wxCommandEvent & event){
         max[i] = 0.0;
         min[i] = 255.0;
     }
+    
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+    
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
 
     //get min-max value for each colour
-        for(int i=0; i< imgWidth; i++){
-            for(int j=0; j<imgHeight; j++){
+    for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){
 
                 double r = (double)(scale * loadedImage->GetRed(i,j));
                 double g = (double)(scale * loadedImage->GetGreen(i,j));
@@ -277,8 +289,8 @@ void MyFrame::OnScaleImage(wxCommandEvent & event){
         }
         
         //rescale pixels and output.
-        for(int i=0; i< imgWidth; i++){
-            for(int j=0; j<imgHeight; j++){
+        for(int i = x;i<width;i++){
+                for(int j = y;j<height;j++){
 
                 double r = (double)(scale * loadedImage->GetRed(i,j));
                 double g = (double)(scale * loadedImage->GetGreen(i,j));
@@ -316,17 +328,26 @@ void MyFrame::OnShiftImage(wxCommandEvent & event){
         free(loadedImage);
         loadedImage = new wxImage(bitmap.ConvertToImage());
         undoImage = new wxImage(bitmap.ConvertToImage());
+        
+        int x = 0;
+        int y = 0;
+        int width = imgWidth;
+        int height = imgHeight;
 
-        for( int i=0;i<imgWidth;i++)
-           for(int j=0;j<imgHeight;j++){
-            
-               
-               
+        if(!selection->IsEmpty()){
+            x = selection->GetTopLeft().x;
+            y = selection->GetTopLeft().y;
+            width = selection->GetBottomRight().x;
+            height = selection->GetBottomRight().y;
+        }
+
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){
                
             loadedImage->SetRGB(i,j,max(min(shift + loadedImage->GetRed(i,j), 255.0), 0.0), 
                                     max(min(shift + loadedImage->GetGreen(i,j), 255.0), 0.0),
-                                    max(min(shift + loadedImage->GetBlue(i,j), 255.0), 0.0)
-                        );
+                                    max(min(shift + loadedImage->GetBlue(i,j), 255.0), 0.0));
+           }
         }
 
         printf(" Finished shifting.\n");
@@ -343,7 +364,7 @@ void MyFrame::OnConvolution(wxCommandEvent & event){
     wxString scaleInput = wxGetTextFromUser (
             wxT("Enter number corresponding to mask:"
             "\n 1. Averaging"
-            "\n 2. Weighted "
+            "\n 2. Weighted Averaging"
             "\n 3. 4-neighbour Laplacian"
             "\n 4. 8-neighbour Laplacian"
             "\n 5. 4-neighbour Laplacian Enhancement"
@@ -471,10 +492,20 @@ void MyFrame::Convolution(double mask[3][3], bool absValConversion)
     undoImage = new wxImage(bitmap.ConvertToImage());
     wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
     
-    for(int i=0;i< imgWidth; i++)
-    {
-        for(int j=0;j<imgHeight;j++)
-        {                 
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
+    
+    for(int i = x;i<width;i++){
+        for(int j = y;j<height;j++){                 
             //Computes weighted average using mask values as weights
             double averageRed = 0.0;
             double averageBlue = 0.0;
@@ -542,7 +573,7 @@ void MyFrame::Convolution(double mask[3][3], bool absValConversion)
     }
 }
 
-//Add Salt
+//Add Salt & PEPPER
 void MyFrame::AddSaltPepper(wxCommandEvent & event){
     
     free(loadedImage);
@@ -564,8 +595,10 @@ void MyFrame::AddSaltPepper(wxCommandEvent & event){
     if(intensity >= 1) {
         for(int i=0; i < intensity; i++)
         {
+            //select random coordinates
             int randomX = rand() % imgWidth;
             int randomY = rand() % imgHeight;
+            //select if salt or pepper
             int saltOrPepper = rand() % 100;
             
             if(saltOrPepper > 50)
@@ -607,9 +640,20 @@ void MyFrame::MinFilter(wxCommandEvent & event){
         undoImage = new wxImage(bitmap.ConvertToImage());
         wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
 
-        for(int i=1; i< imgWidth - 1; i++){
+        int x = 0;
+        int y = 0;
+        int width = imgWidth;
+        int height = imgHeight;
 
-            for(int j=1; j<imgHeight - 1; j++){
+        if(!selection->IsEmpty()){
+            x = selection->GetTopLeft().x;
+            y = selection->GetTopLeft().y;
+            width = selection->GetBottomRight().x;
+            height = selection->GetBottomRight().y;
+        }
+
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){ 
 
                 int minRed = 255;
                 int minBlue = 255;
@@ -671,9 +715,20 @@ void MyFrame::MaxFilter(wxCommandEvent & event){
         undoImage = new wxImage(bitmap.ConvertToImage());
         wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
 
-        for(int i=1; i< imgWidth - 1; i++){
+        int x = 0;
+        int y = 0;
+        int width = imgWidth;
+        int height = imgHeight;
 
-            for(int j=1; j<imgHeight - 1; j++){
+        if(!selection->IsEmpty()){
+            x = selection->GetTopLeft().x;
+            y = selection->GetTopLeft().y;
+            width = selection->GetBottomRight().x;
+            height = selection->GetBottomRight().y;
+        }
+
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){ 
 
                 int maxRed = 0;
                 int maxBlue = 0;
@@ -715,7 +770,7 @@ void MyFrame::MaxFilter(wxCommandEvent & event){
 
 void MyFrame::MidPointFilter(wxCommandEvent & event){
     
-    int neighbours = 1;
+    int neighbours = 0;
     
     wxString scaleInput = wxGetTextFromUser (
             wxT("Enter number of neighbours\ne.g. 1 = 3x3 area"),
@@ -735,9 +790,20 @@ void MyFrame::MidPointFilter(wxCommandEvent & event){
         undoImage = new wxImage(bitmap.ConvertToImage());
         wxImage *tempImage = new wxImage(bitmap.ConvertToImage());
 
-        for(int i=1; i< imgWidth - 1; i++){
+        int x = 0;
+        int y = 0;
+        int width = imgWidth;
+        int height = imgHeight;
 
-            for(int j=1; j<imgHeight - 1; j++){
+        if(!selection->IsEmpty()){
+            x = selection->GetTopLeft().x;
+            y = selection->GetTopLeft().y;
+            width = selection->GetBottomRight().x;
+            height = selection->GetBottomRight().y;
+        }
+
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){ 
 
                 int maxRed = 0;
                 int maxBlue = 0;
@@ -793,11 +859,24 @@ void MyFrame::NegativeLinearTransform(wxCommandEvent & event){
     loadedImage = new wxImage(bitmap.ConvertToImage());
     undoImage = new wxImage(bitmap.ConvertToImage());
     
-    for( int i=0;i<imgWidth;i++)
-       for(int j=0;j<imgHeight;j++){
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
+    
+    for(int i = x;i<width;i++){
+        for(int j = y;j<height;j++){ 
  	loadedImage->SetRGB(i,j,255-loadedImage->GetRed(i,j), 
 				255-loadedImage->GetGreen(i,j),
 				255-loadedImage->GetBlue(i,j));
+       }
     }
     printf(" Finished performing negative linear transformation.\n");
     Refresh();
@@ -838,9 +917,22 @@ void MyFrame::LogTransformation(wxCommandEvent & event){
             min[i] = 255.0;
         }
         
+        
+        int x = 0;
+        int y = 0;
+        int width = imgWidth;
+        int height = imgHeight;
+
+        if(!selection->IsEmpty()){
+            x = selection->GetTopLeft().x;
+            y = selection->GetTopLeft().y;
+            width = selection->GetBottomRight().x;
+            height = selection->GetBottomRight().y;
+        }
+        
         //get min-max value for each colour
-        for(int i=0; i< imgWidth; i++){
-            for(int j=0; j<imgHeight; j++){
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){ 
 
                 double r = (double)(constant * ((log(loadedImage->GetRed(i,j) + 1)) / log(base)));
                 double g = (double)(constant * ((log(loadedImage->GetGreen(i,j) + 1)) / log(base)));
@@ -858,8 +950,8 @@ void MyFrame::LogTransformation(wxCommandEvent & event){
         }
         
         //rescale pixels and output.
-        for(int i=0; i< imgWidth; i++){
-            for(int j=0; j<imgHeight; j++){
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){
 
                 double r = (double)(constant * ((log(loadedImage->GetRed(i,j) + 1)) / log(base)));
                 double g = (double)(constant * ((log(loadedImage->GetGreen(i,j) + 1)) / log(base)));
@@ -913,9 +1005,21 @@ void MyFrame::PowerTransformation(wxCommandEvent & event){
             min[i] = pow(255, power);
         }
         
+        int x = 0;
+        int y = 0;
+        int width = imgWidth;
+        int height = imgHeight;
+
+        if(!selection->IsEmpty()){
+            x = selection->GetTopLeft().x;
+            y = selection->GetTopLeft().y;
+            width = selection->GetBottomRight().x;
+            height = selection->GetBottomRight().y;
+        }
+        
         //get min-max value for each colour
-        for(int i=0; i< imgWidth; i++){
-            for(int j=0; j<imgHeight; j++){
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){
 
                 double r = pow((double)loadedImage->GetRed(i,j), power);
                 double g = pow((double)loadedImage->GetGreen(i,j), power);
@@ -933,8 +1037,8 @@ void MyFrame::PowerTransformation(wxCommandEvent & event){
         }
         
         //rescale pixels and output.
-        for(int i=0; i< imgWidth; i++){
-            for(int j=0; j<imgHeight; j++){
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){
 
                 double r = pow((double)loadedImage->GetRed(i,j), power);
                 double g = pow((double)loadedImage->GetGreen(i,j), power);
@@ -1010,9 +1114,21 @@ double** MyFrame::GetHistogram(wxImage* loadedImage){
         }
     }
 
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
+
     //fill Histogram
-    for(int i=0; i< imgWidth; i++){
-        for(int j=0; j<imgHeight; j++){
+    for(int i = x;i<width;i++){
+        for(int j = y;j<height;j++){
             histogram[0][(int)loadedImage->GetRed(i,j)]++;
             histogram[1][(int)loadedImage->GetGreen(i,j)]++;
             histogram[2][(int)loadedImage->GetBlue(i,j)]++;
@@ -1082,9 +1198,21 @@ void MyFrame::HistogramEqualisation(wxCommandEvent & event){
         }
     }
     
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
+
     //Rescale Image   
-    for(int i=0; i< imgWidth; i++){
-        for(int j=0; j<imgHeight; j++){
+    for(int i = x;i<width;i++){
+        for(int j = y;j<height;j++){
           
             int outputRed = LUT[0][(int)loadedImage->GetRed(i,j)];
             int outputGreen = LUT[1][(int)loadedImage->GetGreen(i,j)];
@@ -1131,9 +1259,21 @@ void MyFrame::HistogramStatistics(wxCommandEvent & event){
     cout << "Blue: " << static_cast<int>(mean[2] + 0.5) << endl;
     cout << endl;
     
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
+    
     //calculate variance
-    for(int i=0; i< imgWidth; i++){
-        for(int j=0; j<imgHeight; j++){
+    for(int i = x;i<width;i++){
+        for(int j = y;j<height;j++){
             variance[0] += (pow((int)loadedImage->GetRed(i,j) - mean[0], 2)/sum[0]);
             variance[1] += (pow((int)loadedImage->GetGreen(i,j) - mean[1], 2)/sum[1]);
             variance[2] += (pow((int)loadedImage->GetBlue(i,j) - mean[2], 2)/sum[2]);
@@ -1166,8 +1306,20 @@ void MyFrame::SimpleThresholding(wxCommandEvent & event){
         loadedImage = new wxImage(bitmap.ConvertToImage());
         undoImage = new wxImage(bitmap.ConvertToImage());
 
-        for(int i=0; i< imgWidth; i++){
-            for(int j=0; j<imgHeight; j++){
+        int x = 0;
+        int y = 0;
+        int width = imgWidth;
+        int height = imgHeight;
+
+        if(!selection->IsEmpty()){
+            x = selection->GetTopLeft().x;
+            y = selection->GetTopLeft().y;
+            width = selection->GetBottomRight().x;
+            height = selection->GetBottomRight().y;
+        }
+
+        for(int i = x;i<width;i++){
+            for(int j = y;j<height;j++){
                 
                 int outputRed = 0;
                 int outputGreen = 0;
@@ -1289,9 +1441,21 @@ void MyFrame::AutoThresholding(wxCommandEvent & event){
     
     cout << "threshold: " << threshold << endl;
     
+    int x = 0;
+    int y = 0;
+    int width = imgWidth;
+    int height = imgHeight;
+
+    if(!selection->IsEmpty()){
+        x = selection->GetTopLeft().x;
+        y = selection->GetTopLeft().y;
+        width = selection->GetBottomRight().x;
+        height = selection->GetBottomRight().y;
+    }
+    
     //applying thresholding to image
-    for(int i=0; i< imgWidth; i++){
-        for(int j=0; j<imgHeight; j++){
+    for(int i = x;i<width;i++){
+        for(int j = y;j<height;j++){
 
             int outputRed = 0;
             int outputGreen = 0;
@@ -1336,7 +1500,7 @@ void MyFrame::OnLeftDown(wxMouseEvent& event){
 void MyFrame::OnLeftUp(wxMouseEvent& event){
     
     if(HasCapture()){
-        
+                
         ReleaseMouse();
         Refresh();
         selection->SetBottomRight(event.GetPosition());
@@ -1344,6 +1508,10 @@ void MyFrame::OnLeftUp(wxMouseEvent& event){
         //in case of single click
         if(selection->GetHeight() == 1 && selection->GetWidth() == 1){
             selection->SetSize(wxSize(0,0));
+            cout << "selection released" << endl;
+        }
+        else{
+            cout << "selection captured" << endl;
         }
     }
 }
